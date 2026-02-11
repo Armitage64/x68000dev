@@ -1,0 +1,6 @@
+@echo off
+echo Checking objcopy supported formats...
+human68k-objcopy.exe --help | findstr /i "xfile"
+echo.
+echo Checking what formats are available...
+human68k-objcopy.exe --info
