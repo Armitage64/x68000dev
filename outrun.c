@@ -39,16 +39,19 @@ Track tracks[] = {
     {"Last Wave",            "LAST.MDX",    "Now playing: Last Wave\r\n"}
 };
 
-/* MXDRV interface using trap #2 */
-void mxdrv_call(int func) {
+/* MXDRV interface using trap #2 - returns result in d0 */
+int mxdrv_call(int func) {
+    int result;
     __asm__ volatile (
-        "move.w %0,-(%%sp)\n\t"
+        "move.w %1,-(%%sp)\n\t"
         "trap #2\n\t"
-        "addq.l #2,%%sp"
-        :
+        "addq.l #2,%%sp\n\t"
+        "move.l %%d0,%0"
+        : "=r" (result)
         : "r" ((short)func)
         : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
     );
+    return result;
 }
 
 void mxdrv_play(void *data) {
@@ -66,15 +69,24 @@ void mxdrv_play(void *data) {
 
 /* Check and initialize MXDRV driver */
 int load_mxdrv(void) {
+    int result;
+
     printf("Checking for MXDRV driver...\r\n");
     fflush(stdout);
 
-    /* Just try to initialize MXDRV - if it's not loaded, this will fail gracefully */
-    /* The user must load MXDRV.X manually before running this program */
-    printf("Initializing MXDRV...\r\n");
+    /* Try to initialize MXDRV */
+    printf("Calling MXDRV_START...\r\n");
     fflush(stdout);
 
-    mxdrv_call(MXDRV_START);
+    result = mxdrv_call(MXDRV_START);
+
+    printf("MXDRV_START returned: %d (0x%x)\r\n", result, result);
+    fflush(stdout);
+
+    if (result < 0) {
+        printf("MXDRV initialization failed!\r\n");
+        return -1;
+    }
 
     printf("MXDRV ready.\r\n");
     fflush(stdout);
