@@ -182,6 +182,21 @@ void print_menu(void) {
     fflush(stdout);
 }
 
+/* Read a character using DOS _INKEY */
+int dos_inkey(void) {
+    int ch;
+    __asm__ volatile (
+        "move.w #0x01,-(%%sp)\n\t"    /* DOS _INKEY function */
+        "trap #15\n\t"                 /* DOS call */
+        "addq.l #2,%%sp\n\t"           /* Clean up stack */
+        "move.w %%d0,%0"               /* Get result */
+        : "=r" (ch)
+        :
+        : "d0", "d1", "memory"
+    );
+    return ch & 0xFF;
+}
+
 /* Main program */
 int main(void) {
     int ch;
@@ -201,8 +216,8 @@ int main(void) {
     while (running) {
         print_menu();
 
-        /* Read character (using standard getchar which properly handles DOS I/O) */
-        ch = getchar();
+        /* Read character using DOS _INKEY (direct DOS call) */
+        ch = dos_inkey();
 
         /* Process input */
         switch (toupper(ch)) {
@@ -222,7 +237,7 @@ int main(void) {
                 stop_music();
                 break;
             case 'Q':
-            case '\033':  /* ESC key */
+            case 0x1B:  /* ESC key */
                 running = 0;
                 break;
         }
