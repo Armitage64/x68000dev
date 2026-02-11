@@ -6,14 +6,14 @@
 AS = vasmm68k_mot
 ASFLAGS = -Fhunk -nosym
 
-CC = human68k-gcc
-OBJCOPY = human68k-objcopy
+CC = m68k-human68k-gcc
+OBJCOPY = m68k-human68k-objcopy
 CFLAGS = -m68000 -O2 -Wall
 LDFLAGS = -ldos -liocs
 
 # Targets
 ASM_TARGET = outrun.x
-C_TARGET = outrun_c.x
+C_TARGET = outrunc.x
 
 # Default target
 all: asm c
@@ -31,10 +31,10 @@ c: $(C_TARGET)
 
 $(C_TARGET): outrun.c
 	@echo "Compiling C version..."
-	$(CC) $(CFLAGS) -o outrun_c.elf $< $(LDFLAGS)
+	$(CC) $(CFLAGS) -o outrunc.elf $< $(LDFLAGS)
 	@echo "Converting to X68000 format..."
-	$(OBJCOPY) -O xfile outrun_c.elf $@
-	@rm -f outrun_c.elf
+	$(OBJCOPY) -O xfile outrunc.elf $@
+	@rm -f outrunc.elf
 	@echo ""
 	@echo "C version built: $(C_TARGET)"
 

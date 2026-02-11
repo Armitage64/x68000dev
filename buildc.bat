@@ -6,8 +6,8 @@ REM ============================================================================
 echo Building Out Run Music Player (C version)...
 
 REM Set paths to tools
-set GCC=human68k-gcc.exe
-set OBJCOPY=human68k-objcopy.exe
+set GCC=m68k-human68k-gcc.exe
+set OBJCOPY=m68k-human68k-objcopy.exe
 
 REM Check if compiler is available
 where %GCC% >nul 2>&1
@@ -29,7 +29,7 @@ if errorlevel 1 (
 
 REM Compile and link the C source
 echo Compiling...
-%GCC% -m68000 -O2 -Wall -o outrun.elf outrun.c -ldos -liocs
+%GCC% -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
 
 if errorlevel 1 (
     echo ERROR: Compilation failed!
@@ -38,7 +38,7 @@ if errorlevel 1 (
 
 REM Convert to X68000 .X format
 echo Converting to X68000 format...
-%OBJCOPY% -O xfile outrun.elf outrun.x
+%OBJCOPY% -O xfile outrunc.elf outrunc.x
 
 if errorlevel 1 (
     echo ERROR: Conversion to X68000 format failed!
@@ -46,12 +46,12 @@ if errorlevel 1 (
 )
 
 REM Clean up intermediate file
-if exist outrun.elf del outrun.elf
+if exist outrunc.elf del outrunc.elf
 
-echo Build successful! Output: outrun.x
+echo Build successful! Output: outrunc.x
 echo.
 echo To run in MAME:
-echo   C:\dev\mame\mame.exe x68000 -ramsize 4M -flop1 outrun.x
+echo   C:\dev\mame\mame.exe x68000 -ramsize 4M -flop1 outrunc.x
 echo.
 echo Make sure MXDRV.X and the .MDX files are in the same directory!
 

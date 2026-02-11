@@ -54,13 +54,13 @@ __asm__ volatile (
 
 2. Compile the fixed C version (when toolchain is ready):
    ```
-   m68k-human68k-gcc -m68000 -O2 -Wall -o outrun_c.elf outrun.c -ldos -liocs
-   m68k-human68k-objcopy -O xfile outrun_c.elf outrun_c.x
+   m68k-human68k-gcc -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
+   m68k-human68k-objcopy -O xfile outrunc.elf outrunc.x
    ```
 
 3. Run in MAME or real hardware:
    ```
-   outrun_c.x
+   outrunc.x
    ```
 
 ## Technical Details

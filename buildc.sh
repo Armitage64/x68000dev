@@ -6,8 +6,8 @@
 echo "Building Out Run Music Player (C version)..."
 
 # Set paths to tools (adjust these to your installation)
-GCC="human68k-gcc"
-OBJCOPY="human68k-objcopy"
+GCC="m68k-human68k-gcc"
+OBJCOPY="m68k-human68k-objcopy"
 
 # Check if compiler is available
 if ! command -v $GCC &> /dev/null; then
@@ -27,7 +27,7 @@ fi
 
 # Compile and link the C source
 echo "Compiling..."
-$GCC -m68000 -O2 -Wall -o outrun.elf outrun.c -ldos -liocs
+$GCC -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Compilation failed!"
@@ -36,7 +36,7 @@ fi
 
 # Convert to X68000 .X format
 echo "Converting to X68000 format..."
-$OBJCOPY -O xfile outrun.elf outrun.x
+$OBJCOPY -O xfile outrunc.elf outrunc.x
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Conversion to X68000 format failed!"
@@ -44,12 +44,12 @@ if [ $? -ne 0 ]; then
 fi
 
 # Clean up intermediate file
-rm -f outrun.elf
+rm -f outrunc.elf
 
-echo "Build successful! Output: outrun.x"
+echo "Build successful! Output: outrunc.x"
 echo ""
 echo "To run in MAME:"
-echo "  mame x68000 -ramsize 4M -flop1 outrun.x"
+echo "  mame x68000 -ramsize 4M -flop1 outrunc.x"
 echo ""
 echo "Make sure MXDRV.X and the .MDX files are in the same directory!"
 

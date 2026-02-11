@@ -4,7 +4,7 @@ A simple music player that plays the four iconic music tracks from the arcade ga
 
 **Available in two versions:**
 - **Assembly version** (`outrun.s` → `outrun.x`) - Original M68000 assembly implementation
-- **C version** (`outrun.c` → `outrun_c.x`) - Rewritten in C for easier maintenance and portability
+- **C version** (`outrun.c` → `outrunc.x`) - Rewritten in C for easier maintenance and portability
 
 ## Features
 
@@ -96,12 +96,12 @@ chmod +x build_c.sh
 
 **Manual (Windows):**
 ```batch
-human68k-gcc.exe -m68000 -O2 -Wall -o outrun_c.elf outrun.c -ldos -liocs
-human68k-objcopy.exe -O xfile outrun_c.elf outrun_c.x
-del outrun_c.elf
+human68k-gcc.exe -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
+human68k-objcopy.exe -O xfile outrunc.elf outrunc.x
+del outrunc.elf
 ```
 
-This will create `outrun_c.x` - the C version executable.
+This will create `outrunc.x` - the C version executable.
 
 ### Using Makefile
 
@@ -122,7 +122,7 @@ make help    # Show help
 - Direct hardware/DOS interface
 - Useful for learning M68000 assembly
 
-**C version (`outrun_c.x`):**
+**C version (`outrunc.x`):**
 - More maintainable code
 - Better I/O handling through standard C library
 - Recommended for actual use and further development
