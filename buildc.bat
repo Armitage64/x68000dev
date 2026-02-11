@@ -27,7 +27,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Compile C source
+REM Compile and link the C source and assembly wrapper
 echo Compiling C source...
 %GCC% -m68000 -O2 -Wall -c -o outrun.o outrun.c
 
@@ -36,30 +36,28 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Compile assembly wrapper (known working implementation)
-echo Compiling MXDRV assembly wrapper...
+echo Assembling MXDRV wrapper...
 %GCC% -m68000 -c -o mxdrv_asm.o mxdrv_asm.s
 
 if errorlevel 1 (
-    echo ERROR: Assembly compilation failed!
+    echo ERROR: Assembly failed!
     exit /b 1
 )
 
-REM Link everything together
 echo Linking...
 %GCC% -m68000 -o outrunc.elf outrun.o mxdrv_asm.o -ldos -liocs
 
 if errorlevel 1 (
-    echo ERROR: Linking failed!
+    echo ERROR: Compilation failed!
     exit /b 1
 )
 
-REM Convert to X68000 format
+REM Convert to X68000 .X format
 echo Converting to X68000 format...
 %OBJCOPY% -O xfile outrunc.elf outrunc.x
 
 if errorlevel 1 (
-    echo ERROR: Conversion failed!
+    echo ERROR: Conversion to X68000 format failed!
     exit /b 1
 )
 
