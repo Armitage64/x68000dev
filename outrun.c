@@ -243,9 +243,9 @@ int main(void) {
         }
     }
 
-    /* Cleanup */
+    /* Cleanup - stop music but don't unload MXDRV (we didn't load it) */
     mxdrv_call(MXDRV_STOP);
-    mxdrv_call(MXDRV_END);
+    /* Note: We don't call MXDRV_END because MXDRV.X was loaded externally as TSR */
 
     printf("\r\nThanks for listening!\r\n");
 
