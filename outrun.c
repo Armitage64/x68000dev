@@ -53,12 +53,13 @@ void mxdrv_call(int func) {
 
 void mxdrv_play(void *data) {
     __asm__ volatile (
-        "move.l %0,-(%%sp)\n\t"
+        "movea.l %0,%%a0\n\t"
+        "pea (%%a0)\n\t"
         "move.w #3,-(%%sp)\n\t"
         "trap #10\n\t"
         "addq.l #6,%%sp"
         :
-        : "r" (data)
+        : "g" (data)
         : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
     );
 }
@@ -71,15 +72,17 @@ int load_mxdrv(void) {
 
     /* Load MXDRV.X as a process using DOS EXEC (0x4b) */
     __asm__ volatile (
-        "move.w #0x4b,-(%%sp)\n\t"      /* DOS _EXEC function */
-        "pea (%2)\n\t"                   /* Command line */
+        "movea.l %1,%%a0\n\t"            /* Move path to address register */
+        "movea.l %2,%%a1\n\t"            /* Move cmdline to address register */
+        "move.w #0x4b,-(%%sp)\n\t"       /* DOS _EXEC function */
+        "pea (%%a1)\n\t"                 /* Command line */
         "move.w #0,-(%%sp)\n\t"          /* Mode = 0 (load only) */
-        "pea (%1)\n\t"                   /* File path */
+        "pea (%%a0)\n\t"                 /* File path */
         "trap #15\n\t"                   /* DOS call */
         "lea 12(%%sp),%%sp\n\t"          /* Clean up stack */
         "move.l %%d0,%0"                 /* Save result */
         : "=r" (result)
-        : "r" (mxdrv_path), "r" (mxdrv_cmdline)
+        : "g" (mxdrv_path), "g" (mxdrv_cmdline)
         : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
     );
 
