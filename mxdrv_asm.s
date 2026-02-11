@@ -11,7 +11,8 @@
 	.global	mxdrv_call
 	.type	mxdrv_call,@function
 mxdrv_call:
-	move.w	4(%sp),-(%sp)	| Push function number parameter
+	move.l	4(%sp),%d0	| Get function number (32-bit int)
+	move.w	%d0,-(%sp)	| Push only low 16 bits
 	trap	#10		| Call MXDRV
 	addq.l	#2,%sp		| Clean up stack (pop 2 bytes)
 	rts			| Return with result in D0
