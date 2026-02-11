@@ -277,7 +277,7 @@ banner:
 	dc.b	'============================================',$0d,$0a
 	dc.b	'   OUT RUN Music Player for X68000',$0d,$0a
 	dc.b	'============================================',$0d,$0a
-	dc.b	$0d,$0a,0
+	dc.b	$0d,$0a,'$'
 
 menu_text:
 	dc.b	$0d,$0a
@@ -290,44 +290,44 @@ menu_text:
 	dc.b	'  S. Stop music',$0d,$0a
 	dc.b	'  Q. Quit',$0d,$0a
 	dc.b	$0d,$0a
-	dc.b	'Your choice: ',0
+	dc.b	'Your choice: ','$'
 
 playing_magical:
 	dc.b	$0d,$0a
-	dc.b	'Now playing: Magical Sound Shower',$0d,$0a,0
+	dc.b	'Now playing: Magical Sound Shower',$0d,$0a,'$'
 
 playing_passing:
 	dc.b	$0d,$0a
-	dc.b	'Now playing: Passing Breeze',$0d,$0a,0
+	dc.b	'Now playing: Passing Breeze',$0d,$0a,'$'
 
 playing_splash:
 	dc.b	$0d,$0a
-	dc.b	'Now playing: Splash Wave',$0d,$0a,0
+	dc.b	'Now playing: Splash Wave',$0d,$0a,'$'
 
 playing_last:
 	dc.b	$0d,$0a
-	dc.b	'Now playing: Last Wave',$0d,$0a,0
+	dc.b	'Now playing: Last Wave',$0d,$0a,'$'
 
 stopped_msg:
 	dc.b	$0d,$0a
-	dc.b	'Music stopped.',$0d,$0a,0
+	dc.b	'Music stopped.',$0d,$0a,'$'
 
 goodbye_msg:
 	dc.b	$0d,$0a
-	dc.b	'Thanks for listening!',$0d,$0a,0
+	dc.b	'Thanks for listening!',$0d,$0a,'$'
 
 error_msg:
 	dc.b	$0d,$0a
 	dc.b	'ERROR: Could not load MXDRV.X driver!',$0d,$0a
-	dc.b	'Make sure MXDRV.X is in the current directory.',$0d,$0a,0
+	dc.b	'Make sure MXDRV.X is in the current directory.',$0d,$0a,'$'
 
 error_file_msg:
 	dc.b	$0d,$0a
-	dc.b	'ERROR: Could not open MDX file!',$0d,$0a,0
+	dc.b	'ERROR: Could not open MDX file!',$0d,$0a,'$'
 
 error_mem_msg:
 	dc.b	$0d,$0a
-	dc.b	'ERROR: Could not allocate memory!',$0d,$0a,0
+	dc.b	'ERROR: Could not allocate memory!',$0d,$0a,'$'
 
 mxdrv_path:
 	dc.b	'MXDRV.X',0
