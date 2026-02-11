@@ -32,10 +32,8 @@ MXDRV_FADEOUT	equ	$07
 * Program start
 start:
 	* Print banner
-	pea	banner
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	banner,a1
+	bsr	print_string
 
 	* Load MXDRV driver
 	bsr	load_mxdrv
@@ -44,10 +42,8 @@ start:
 
 main_loop:
 	* Print menu
-	pea	menu_text
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	menu_text,a1
+	bsr	print_string
 
 	* Wait for key press
 	move.w	#_INKEY,-(sp)
@@ -110,10 +106,8 @@ stop_music:
 	trap	#10
 	addq.l	#2,sp
 
-	pea	stopped_msg
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	stopped_msg,a1
+	bsr	print_string
 
 	bra	main_loop
 
@@ -128,20 +122,16 @@ exit_program:
 	trap	#10
 	addq.l	#2,sp
 
-	pea	goodbye_msg
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	goodbye_msg,a1
+	bsr	print_string
 
 	move.w	#0,-(sp)
 	move.w	#_EXIT,-(sp)
 	trap	#15
 
 error_mxdrv:
-	pea	error_msg
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	error_msg,a1
+	bsr	print_string
 
 	move.w	#1,-(sp)
 	move.w	#_EXIT,-(sp)
@@ -189,10 +179,8 @@ play_track:
 	addq.l	#2,sp
 
 	* Print status message
-	move.l	4+60(sp),-(sp)		* status message
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	move.l	4+60(sp),a1		* status message
+	bsr	print_string
 
 	* Open the MDX file
 	move.w	#0,-(sp)		* mode (read)
@@ -245,10 +233,8 @@ play_track:
 	rts
 
 .error_open:
-	pea	error_file_msg
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	error_file_msg,a1
+	bsr	print_string
 	movem.l	(sp)+,d0-d7/a0-a6
 	rts
 
@@ -259,11 +245,29 @@ play_track:
 	trap	#15
 	addq.l	#4,sp
 
-	pea	error_mem_msg
-	move.w	#_PRINT,-(sp)
-	trap	#15
-	addq.l	#6,sp
+	lea	error_mem_msg,a1
+	bsr	print_string
 	movem.l	(sp)+,d0-d7/a0-a6
+	rts
+
+* ============================================================================
+* Print a '$' terminated string
+* Parameters:
+*   a1 = pointer to string
+* ============================================================================
+print_string:
+	movem.l	d0-d2/a0-a2,-(sp)
+.loop:
+	move.b	(a1)+,d0
+	cmp.b	#'$',d0
+	beq	.done
+	move.w	d0,-(sp)
+	move.w	#$02,-(sp)		* DOS _PUTCHAR function
+	trap	#15
+	addq.l	#4,sp
+	bra	.loop
+.done:
+	movem.l	(sp)+,d0-d2/a0-a2
 	rts
 
 * ============================================================================
