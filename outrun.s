@@ -251,20 +251,22 @@ play_track:
 	rts
 
 * ============================================================================
-* Print a '$' terminated string
+* Print a '$' terminated string using IOCS B_PUTC
 * Parameters:
 *   a1 = pointer to string
 * ============================================================================
 print_string:
 	movem.l	d0-d2/a0-a2,-(sp)
 .loop:
-	move.b	(a1)+,d0
-	cmp.b	#'$',d0
+	move.b	(a1)+,d1
 	beq	.done
-	move.w	d0,-(sp)
-	move.w	#$02,-(sp)		* DOS _PUTCHAR function
-	trap	#15
-	addq.l	#4,sp
+	cmp.b	#'$',d1
+	beq	.done
+	and.w	#$ff,d1			* Clear upper byte
+	move.w	d1,-(sp)
+	move.w	#$20,-(sp)		* IOCS _B_PUTC function
+	trap	#14			* IOCS trap
+	addq.w	#4,sp
 	bra	.loop
 .done:
 	movem.l	(sp)+,d0-d2/a0-a2
@@ -274,6 +276,7 @@ print_string:
 * Data section
 * ============================================================================
 	section data
+	.even
 
 banner:
 	dc.b	$1b,'[','2','J'		* Clear screen
