@@ -43,6 +43,9 @@ Track tracks[] = {
 extern int mxdrv_call(int func);
 extern void mxdrv_play(void *data);
 
+/* DOS functions - defined later in this file */
+int dos_inkey(void);
+
 /* Initialize MXDRV driver */
 int load_mxdrv(void) {
     int result;
