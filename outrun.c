@@ -81,8 +81,14 @@ int load_mxdrv(void) {
     printf("\r\n");
     fflush(stdout);
 
+    printf("DEBUG: About to call trap #10 with MXDRV_STAT (func=0x%02x)...\r\n", MXDRV_STAT);
+    fflush(stdout);
+
     /* Check if MXDRV is loaded using STAT */
     result = mxdrv_call(MXDRV_STAT);
+
+    printf("DEBUG: trap #10 returned successfully! Result = %d (0x%04x)\r\n", result, result & 0xFFFF);
+    fflush(stdout);
 
     if (result < 0) {
         printf("ERROR: MXDRV not loaded (returned %d / $%04x)\r\n", result, result & 0xFFFF);
