@@ -52,7 +52,7 @@ int mxdrv_call(int func) {
         "addq.l #2,%%sp"
         : "=r" (result)
         : "r" (funcnum)
-        : "d1", "d2", "a0", "a1", "a2", "memory"
+        : "d2", "a0", "a2", "memory"
     );
 
     return result;
@@ -68,7 +68,7 @@ void mxdrv_play(void *data) {
         "addq.l #6,%%sp"
         :
         : "r" (mdx_data)
-        : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
+        : "d0", "d1", "d2", "a0", "a2", "memory"
     );
 }
 
