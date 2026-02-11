@@ -11,15 +11,17 @@
 #include <string.h>
 #include <ctype.h>
 
-/* MXDRV function numbers */
-#define MXDRV_START   0x00
-#define MXDRV_END     0x01
-#define MXDRV_STAT    0x02
-#define MXDRV_PLAY    0x03
-#define MXDRV_STOP    0x04
-#define MXDRV_PAUSE   0x05
-#define MXDRV_CONT    0x06
-#define MXDRV_FADEOUT 0x07
+/* MXDRV function numbers - based on mdxtools documentation */
+#define MXDRV_FREE          0x00
+#define MXDRV_ERROR         0x01
+#define MXDRV_SETMDX        0x02  /* Load MDX data */
+#define MXDRV_SETPDX        0x03  /* Load PDX data */
+#define MXDRV_PLAY          0x04  /* Start playback */
+#define MXDRV_STOP          0x05  /* Stop playback */
+#define MXDRV_PAUSE         0x06  /* Pause */
+#define MXDRV_CONT          0x07  /* Continue */
+#define MXDRV_FADEOUT       0x0C  /* Fade out */
+#define MXDRV_GET_STATUS    0x12  /* Get playback flags/status */
 
 /* Human68k DOS call numbers */
 #define DOS_EXEC   0x4b
@@ -57,13 +59,13 @@ int load_mxdrv(void) {
     printf("\r\n");
     fflush(stdout);
 
-    printf("DEBUG: About to call trap #10 with MXDRV_STAT (func=0x%02x)...\r\n", MXDRV_STAT);
+    printf("DEBUG: About to call trap #4 with MXDRV_GET_STATUS (func=0x%02x)...\r\n", MXDRV_GET_STATUS);
     fflush(stdout);
 
-    /* Check if MXDRV is loaded using STAT */
-    result = mxdrv_call(MXDRV_STAT);
+    /* Check if MXDRV is loaded using GET_STATUS */
+    result = mxdrv_call(MXDRV_GET_STATUS);
 
-    printf("DEBUG: trap #10 returned successfully! Result = %d (0x%04x)\r\n", result, result & 0xFFFF);
+    printf("DEBUG: trap #4 returned successfully! Result = %d (0x%04x)\r\n", result, result & 0xFFFF);
     fflush(stdout);
 
     if (result < 0) {
