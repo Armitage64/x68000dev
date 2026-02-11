@@ -276,7 +276,6 @@ print_string:
 * Data section
 * ============================================================================
 	section data
-	.even
 
 banner:
 	dc.b	$1b,'[','2','J'		* Clear screen
