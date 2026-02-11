@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <dos.h>
 
 /* MXDRV function numbers */
 #define MXDRV_START   0x00
@@ -67,9 +66,23 @@ void mxdrv_play(void *data) {
 /* Load and initialize MXDRV driver */
 int load_mxdrv(void) {
     int result;
+    static char mxdrv_path[] = "MXDRV.X";
+    static char mxdrv_cmdline[] = "";
 
-    /* Load MXDRV.X as a process using DOS EXEC */
-    result = _dos_exec(0, "MXDRV.X", "");
+    /* Load MXDRV.X as a process using DOS EXEC (0x4b) */
+    __asm__ volatile (
+        "move.w #0x4b,-(%%sp)\n\t"      /* DOS _EXEC function */
+        "pea (%2)\n\t"                   /* Command line */
+        "move.w #0,-(%%sp)\n\t"          /* Mode = 0 (load only) */
+        "pea (%1)\n\t"                   /* File path */
+        "trap #15\n\t"                   /* DOS call */
+        "lea 12(%%sp),%%sp\n\t"          /* Clean up stack */
+        "move.l %%d0,%0"                 /* Save result */
+        : "=r" (result)
+        : "r" (mxdrv_path), "r" (mxdrv_cmdline)
+        : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
+    );
+
     if (result < 0) {
         return -1;
     }
