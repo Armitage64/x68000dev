@@ -39,30 +39,32 @@ Track tracks[] = {
     {"Last Wave",            "LAST.MDX",    "Now playing: Last Wave\r\n"}
 };
 
-/* MXDRV interface using trap #2 - function number in d0, returns result in d0 */
+/* MXDRV interface using trap #10 - function number pushed on stack */
 int mxdrv_call(int func) {
-    register int d0 __asm__("d0") = func;
+    int result;
 
     __asm__ volatile (
-        "trap #2"
-        : "+r" (d0)
-        :
-        : "d1", "d2", "a0", "a1", "a2", "memory"
+        "move.w %1,-(%%sp)\n\t"
+        "trap #10\n\t"
+        "addq.l #2,%%sp\n\t"
+        "move.w %%d0,%0"
+        : "=r" (result)
+        : "r" ((short)func)
+        : "d0", "d1", "d2", "a0", "a1", "a2", "memory", "sp"
     );
 
-    return d0;
+    return result;
 }
 
 void mxdrv_play(void *data) {
-    register int d0 __asm__("d0") = MXDRV_PLAY;
-
     __asm__ volatile (
-        "pea (%1)\n\t"
-        "trap #2\n\t"
-        "addq.l #4,%%sp"
-        : "+r" (d0)
-        : "a" (data)
-        : "d1", "d2", "a0", "a1", "a2", "memory"
+        "move.l %0,-(%%sp)\n\t"
+        "move.w #3,-(%%sp)\n\t"
+        "trap #10\n\t"
+        "addq.l #6,%%sp"
+        :
+        : "r" (data)
+        : "d0", "d1", "d2", "a0", "a1", "a2", "memory", "sp"
     );
 }
 
@@ -70,7 +72,7 @@ void mxdrv_play(void *data) {
 int load_mxdrv(void) {
     int result;
 
-    printf("Initializing MXDRV driver...\r\n");
+    printf("Checking MXDRV driver...\r\n");
     printf("\r\n");
     printf("NOTE: If you get an error here, make sure to run:\r\n");
     printf("      MXDRV.X\r\n");
@@ -78,16 +80,16 @@ int load_mxdrv(void) {
     printf("\r\n");
     fflush(stdout);
 
-    /* Try to initialize MXDRV - this will fail if MXDRV.X hasn't been run */
-    result = mxdrv_call(MXDRV_START);
+    /* Check if MXDRV is loaded using STAT - don't try to START it */
+    result = mxdrv_call(MXDRV_STAT);
 
     if (result < 0) {
-        printf("ERROR: MXDRV initialization failed (returned %d)\r\n", result);
+        printf("ERROR: MXDRV not loaded (returned %d / $%04x)\r\n", result, result & 0xFFFF);
         printf("Please run MXDRV.X first, then try again.\r\n");
         return -1;
     }
 
-    printf("MXDRV initialized successfully.\r\n");
+    printf("MXDRV is loaded and ready (status: %d).\r\n", result);
     fflush(stdout);
 
     return 0;
