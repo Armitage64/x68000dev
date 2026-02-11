@@ -24,6 +24,7 @@ A simple music player that plays the four iconic music tracks from the arcade ga
 - `outrun.c` - C source code
 - `build.bat` - Windows build script (assembly)
 - `build.sh` - Linux/Mac build script (assembly)
+- `build_c.bat` - Windows build script (C version)
 - `build_c.sh` - Linux/Mac build script (C version)
 - `Makefile` - Build system for both versions
 
@@ -82,10 +83,22 @@ This will create `outrun.x` - the executable program.
 
 ### C Version
 
+**Windows:**
+```batch
+build_c.bat
+```
+
 **Linux/Mac:**
 ```bash
 chmod +x build_c.sh
 ./build_c.sh
+```
+
+**Manual (Windows):**
+```batch
+human68k-gcc.exe -m68000 -O2 -Wall -o outrun_c.elf outrun.c -ldos -liocs
+human68k-objcopy.exe -O xfile outrun_c.elf outrun_c.x
+del outrun_c.elf
 ```
 
 This will create `outrun_c.x` - the C version executable.
