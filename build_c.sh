@@ -7,6 +7,7 @@ echo "Building Out Run Music Player (C version)..."
 
 # Set paths to tools (adjust these to your installation)
 GCC="human68k-gcc"
+OBJCOPY="human68k-objcopy"
 
 # Check if compiler is available
 if ! command -v $GCC &> /dev/null; then
@@ -17,13 +18,33 @@ if ! command -v $GCC &> /dev/null; then
     exit 1
 fi
 
-# Compile the C source
-$GCC -O2 -Wall -o outrun_c.x outrun.c
+# Check if objcopy is available
+if ! command -v $OBJCOPY &> /dev/null; then
+    echo "ERROR: $OBJCOPY not found in PATH"
+    echo "Please install binutils-2.22-human68k"
+    exit 1
+fi
+
+# Compile and link the C source
+echo "Compiling..."
+$GCC -m68000 -O2 -Wall -o outrun_c.elf outrun.c -ldos -liocs
 
 if [ $? -ne 0 ]; then
     echo "ERROR: Compilation failed!"
     exit 1
 fi
+
+# Convert to X68000 .X format
+echo "Converting to X68000 format..."
+$OBJCOPY -O xfile outrun_c.elf outrun_c.x
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Conversion to X68000 format failed!"
+    exit 1
+fi
+
+# Clean up intermediate file
+rm -f outrun_c.elf
 
 echo "Build successful! Output: outrun_c.x"
 echo ""
