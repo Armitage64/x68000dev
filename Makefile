@@ -29,12 +29,14 @@ $(ASM_TARGET): outrun.s
 # C version
 c: $(C_TARGET)
 
-$(C_TARGET): outrun.c
+$(C_TARGET): outrun.c mxdrv_asm.s
 	@echo "Compiling C version..."
-	$(CC) $(CFLAGS) -o outrunc.elf $< $(LDFLAGS)
+	$(CC) $(CFLAGS) -c -o outrun.o outrun.c
+	$(CC) -m68000 -c -o mxdrv_asm.o mxdrv_asm.s
+	$(CC) -m68000 -o outrunc.elf outrun.o mxdrv_asm.o $(LDFLAGS)
 	@echo "Converting to X68000 format..."
 	$(OBJCOPY) -O xfile outrunc.elf $@
-	@rm -f outrunc.elf
+	@rm -f outrunc.elf outrun.o mxdrv_asm.o
 	@echo ""
 	@echo "C version built: $(C_TARGET)"
 

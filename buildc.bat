@@ -27,9 +27,25 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Compile and link the C source
-echo Compiling...
-%GCC% -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
+REM Compile and link the C source and assembly wrapper
+echo Compiling C source...
+%GCC% -m68000 -O2 -Wall -c -o outrun.o outrun.c
+
+if errorlevel 1 (
+    echo ERROR: C compilation failed!
+    exit /b 1
+)
+
+echo Assembling MXDRV wrapper...
+%GCC% -m68000 -c -o mxdrv_asm.o mxdrv_asm.s
+
+if errorlevel 1 (
+    echo ERROR: Assembly failed!
+    exit /b 1
+)
+
+echo Linking...
+%GCC% -m68000 -o outrunc.elf outrun.o mxdrv_asm.o -ldos -liocs
 
 if errorlevel 1 (
     echo ERROR: Compilation failed!
@@ -45,8 +61,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Clean up intermediate file
+REM Clean up intermediate files
 if exist outrunc.elf del outrunc.elf
+if exist outrun.o del outrun.o
+if exist mxdrv_asm.o del mxdrv_asm.o
 
 echo Build successful! Output: outrunc.x
 echo.

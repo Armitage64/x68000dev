@@ -25,12 +25,28 @@ if ! command -v $OBJCOPY &> /dev/null; then
     exit 1
 fi
 
-# Compile and link the C source
-echo "Compiling..."
-$GCC -m68000 -O2 -Wall -o outrunc.elf outrun.c -ldos -liocs
+# Compile and link the C source and assembly wrapper
+echo "Compiling C source..."
+$GCC -m68000 -O2 -Wall -c -o outrun.o outrun.c
 
 if [ $? -ne 0 ]; then
-    echo "ERROR: Compilation failed!"
+    echo "ERROR: C compilation failed!"
+    exit 1
+fi
+
+echo "Assembling MXDRV wrapper..."
+$GCC -m68000 -c -o mxdrv_asm.o mxdrv_asm.s
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Assembly failed!"
+    exit 1
+fi
+
+echo "Linking..."
+$GCC -m68000 -o outrunc.elf outrun.o mxdrv_asm.o -ldos -liocs
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Linking failed!"
     exit 1
 fi
 
@@ -43,8 +59,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Clean up intermediate file
-rm -f outrunc.elf
+# Clean up intermediate files
+rm -f outrunc.elf outrun.o mxdrv_asm.o
 
 echo "Build successful! Output: outrunc.x"
 echo ""
