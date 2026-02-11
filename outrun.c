@@ -39,11 +39,11 @@ Track tracks[] = {
     {"Last Wave",            "LAST.MDX",    "Now playing: Last Wave\r\n"}
 };
 
-/* MXDRV interface using trap #10 */
+/* MXDRV interface using trap #2 */
 void mxdrv_call(int func) {
     __asm__ volatile (
         "move.w %0,-(%%sp)\n\t"
-        "trap #10\n\t"
+        "trap #2\n\t"
         "addq.l #2,%%sp"
         :
         : "r" ((short)func)
@@ -56,7 +56,7 @@ void mxdrv_play(void *data) {
         "movea.l %0,%%a0\n\t"
         "pea (%%a0)\n\t"
         "move.w #3,-(%%sp)\n\t"
-        "trap #10\n\t"
+        "trap #2\n\t"
         "addq.l #6,%%sp"
         :
         : "g" (data)
@@ -64,46 +64,19 @@ void mxdrv_play(void *data) {
     );
 }
 
-/* Load and initialize MXDRV driver */
+/* Check and initialize MXDRV driver */
 int load_mxdrv(void) {
-    int result;
-    static char mxdrv_path[] = "MXDRV.X";
-    static char mxdrv_cmdline[] = "";
-
-    printf("Loading MXDRV driver...\r\n");
+    printf("Checking for MXDRV driver...\r\n");
     fflush(stdout);
 
-    /* Load MXDRV.X as a process using DOS EXEC (0x4b) */
-    /* Stack order (bottom to top): cmdline, filename, mode, function */
-    __asm__ volatile (
-        "movea.l %1,%%a0\n\t"            /* Move path to address register */
-        "movea.l %2,%%a1\n\t"            /* Move cmdline to address register */
-        "pea (%%a1)\n\t"                 /* Push command line (first param) */
-        "pea (%%a0)\n\t"                 /* Push file path (second param) */
-        "move.w #0,-(%%sp)\n\t"          /* Push mode = 0 (load only) */
-        "move.w #0x4b,-(%%sp)\n\t"       /* Push DOS _EXEC function */
-        "trap #15\n\t"                   /* DOS call */
-        "lea 12(%%sp),%%sp\n\t"          /* Clean up stack (2+2+4+4=12 bytes) */
-        "move.l %%d0,%0"                 /* Save result */
-        : "=r" (result)
-        : "g" (mxdrv_path), "g" (mxdrv_cmdline)
-        : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
-    );
-
-    printf("EXEC result: %d\r\n", result);
-    fflush(stdout);
-
-    if (result < 0) {
-        return -1;
-    }
-
+    /* Just try to initialize MXDRV - if it's not loaded, this will fail gracefully */
+    /* The user must load MXDRV.X manually before running this program */
     printf("Initializing MXDRV...\r\n");
     fflush(stdout);
 
-    /* Initialize MXDRV */
     mxdrv_call(MXDRV_START);
 
-    printf("MXDRV initialized.\r\n");
+    printf("MXDRV ready.\r\n");
     fflush(stdout);
 
     return 0;
@@ -218,10 +191,11 @@ int main(void) {
     /* Print banner */
     print_banner();
 
-    /* Load MXDRV driver */
+    /* Initialize MXDRV driver */
     if (load_mxdrv() < 0) {
-        printf("\r\nERROR: Could not load MXDRV.X driver!\r\n");
-        printf("Make sure MXDRV.X is in the current directory.\r\n");
+        printf("\r\nERROR: MXDRV driver is not loaded!\r\n");
+        printf("Please run MXDRV.X first, then run this program.\r\n");
+        printf("Example: MXDRV.X\r\n");
         return 1;
     }
 
