@@ -67,54 +67,28 @@ void mxdrv_play(void *data) {
     );
 }
 
-/* Check if trap #2 vector is set (MXDRV loaded) */
-int check_mxdrv_loaded(void) {
-    unsigned long *vector_table;
-    unsigned long trap_vector;
-
-    /* Trap #2 is vector 34 (0x22), located at address 0x88 (0x22 * 4) */
-    vector_table = (unsigned long *)0x88;
-    trap_vector = *vector_table;
-
-    printf("Trap #2 vector: 0x%08lx\r\n", trap_vector);
-    fflush(stdout);
-
-    /* If vector is 0 or points to default handler, MXDRV isn't loaded */
-    return (trap_vector != 0 && trap_vector != 0xFFFFFFFF) ? 1 : 0;
-}
-
-/* Check and initialize MXDRV driver */
+/* Initialize MXDRV driver */
 int load_mxdrv(void) {
     int result;
 
-    printf("Checking for MXDRV driver...\r\n");
+    printf("Initializing MXDRV driver...\r\n");
+    printf("\r\n");
+    printf("NOTE: If you get an error here, make sure to run:\r\n");
+    printf("      MXDRV.X\r\n");
+    printf("      before running this program!\r\n");
+    printf("\r\n");
     fflush(stdout);
 
-    /* Check if trap #2 is set up */
-    if (!check_mxdrv_loaded()) {
-        printf("MXDRV is NOT loaded!\r\n");
-        printf("Trap #2 vector is not set.\r\n");
-        return -1;
-    }
-
-    printf("MXDRV trap vector found.\r\n");
-    fflush(stdout);
-
-    /* Try to initialize MXDRV */
-    printf("Calling MXDRV_START...\r\n");
-    fflush(stdout);
-
+    /* Try to initialize MXDRV - this will fail if MXDRV.X hasn't been run */
     result = mxdrv_call(MXDRV_START);
 
-    printf("MXDRV_START returned: %d (0x%x)\r\n", result, result);
-    fflush(stdout);
-
     if (result < 0) {
-        printf("MXDRV initialization failed!\r\n");
+        printf("ERROR: MXDRV initialization failed (returned %d)\r\n", result);
+        printf("Please run MXDRV.X first, then try again.\r\n");
         return -1;
     }
 
-    printf("MXDRV ready.\r\n");
+    printf("MXDRV initialized successfully.\r\n");
     fflush(stdout);
 
     return 0;
