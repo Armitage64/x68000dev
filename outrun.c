@@ -69,17 +69,14 @@ void mxdrv_play(void *data) {
 
 /* Check if trap #2 vector is set (MXDRV loaded) */
 int check_mxdrv_loaded(void) {
+    unsigned long *vector_table;
     unsigned long trap_vector;
 
-    /* Read trap #2 vector from address 0x88 (trap 2 = vector 34 = 0x22 * 4) */
-    __asm__ volatile (
-        "move.l (0x88).w,%0"
-        : "=r" (trap_vector)
-        :
-        : "memory"
-    );
+    /* Trap #2 is vector 34 (0x22), located at address 0x88 (0x22 * 4) */
+    vector_table = (unsigned long *)0x88;
+    trap_vector = *vector_table;
 
-    printf("Trap #2 vector: 0x%lx\r\n", trap_vector);
+    printf("Trap #2 vector: 0x%08lx\r\n", trap_vector);
     fflush(stdout);
 
     /* If vector is 0 or points to default handler, MXDRV isn't loaded */
