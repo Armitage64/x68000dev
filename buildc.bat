@@ -37,24 +37,14 @@ if errorlevel 1 (
 )
 
 echo Linking...
-%GCC% -m68000 -o outrunc.elf outrun.o -ldos -liocs
+%GCC% -m68000 -o outrunc.x outrun.o -ldos -liocs
 
 if errorlevel 1 (
-    echo ERROR: Compilation failed!
-    exit /b 1
-)
-
-REM Convert to X68000 .X format
-echo Converting to X68000 format...
-%OBJCOPY% -O xfile outrunc.elf outrunc.x
-
-if errorlevel 1 (
-    echo ERROR: Conversion to X68000 format failed!
+    echo ERROR: Linking failed!
     exit /b 1
 )
 
 REM Clean up intermediate files
-if exist outrunc.elf del outrunc.elf
 if exist outrun.o del outrun.o
 
 echo Build successful! Output: outrunc.x
