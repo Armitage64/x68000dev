@@ -15,4 +15,4 @@ start:
 msg:
 	dc.b	'Hello from X68000!',13,10,'$'
 
-	end
+	end start
