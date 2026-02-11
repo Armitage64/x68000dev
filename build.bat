@@ -17,7 +17,7 @@ if not exist "%VASM%" (
 )
 
 REM Assemble the source
-"%VASM%" -Fhunk -o outrun.x -nosym outrun.s
+"%VASM%" -Fxfile -o outrun.x -nosym outrun.s
 
 if errorlevel 1 (
     echo ERROR: Assembly failed!
