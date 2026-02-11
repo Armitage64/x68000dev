@@ -68,41 +68,18 @@ void mxdrv_play(void *data) {
     );
 }
 
-/* Check if a trap vector is installed */
-int is_trap_installed(int trap_num) {
-    void **trap_vector;
-
-    /* Trap vectors are at addresses 0x80 + (trap_num * 4) */
-    trap_vector = (void **)(0x80 + (trap_num * 4));
-
-    /* If vector points to a valid address (not NULL or default), trap is installed */
-    return (*trap_vector != NULL && *trap_vector != (void *)0xFFFFFFFF);
-}
-
 /* Initialize MXDRV driver */
 int load_mxdrv(void) {
     int result;
 
     printf("Checking MXDRV driver...\r\n");
     printf("\r\n");
+    printf("NOTE: Make sure MXDRV.X is loaded before running!\r\n");
+    printf("      If the system crashes here, run: MXDRV.X\r\n");
+    printf("\r\n");
     fflush(stdout);
 
-    /* First, check if trap #10 vector is installed */
-    if (!is_trap_installed(10)) {
-        printf("ERROR: Trap #10 vector not installed!\r\n");
-        printf("\r\n");
-        printf("MXDRV.X is not loaded. Please run:\r\n");
-        printf("      MXDRV.X\r\n");
-        printf("before running this program.\r\n");
-        printf("\r\nPress any key to exit...\r\n");
-        dos_inkey();
-        return -1;
-    }
-
-    printf("Trap #10 vector is installed, checking MXDRV status...\r\n");
-    fflush(stdout);
-
-    /* Check if MXDRV is loaded using STAT - don't try to START it */
+    /* Check if MXDRV is loaded using STAT */
     result = mxdrv_call(MXDRV_STAT);
 
     if (result < 0) {
