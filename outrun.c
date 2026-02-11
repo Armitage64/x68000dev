@@ -41,36 +41,9 @@ Track tracks[] = {
     {"Last Wave",            "LAST.MDX",    "Now playing: Last Wave\r\n"}
 };
 
-/* MXDRV interface using inline assembly with trap #4 */
-int mxdrv_call(int func) {
-    register int result __asm__("d0");
-    register int funcnum __asm__("d1") = func;
-
-    __asm__ volatile (
-        "move.w %%d1,-(%%sp)\n\t"
-        "trap #4\n\t"
-        "addq.l #2,%%sp"
-        : "=r" (result)
-        : "r" (funcnum)
-        : "d2", "a0", "a2", "memory"
-    );
-
-    return result;
-}
-
-void mxdrv_play(void *data) {
-    register void *mdx_data __asm__("a1") = data;
-
-    __asm__ volatile (
-        "move.l %%a1,-(%%sp)\n\t"
-        "move.w #3,-(%%sp)\n\t"
-        "trap #4\n\t"
-        "addq.l #6,%%sp"
-        :
-        : "r" (mdx_data)
-        : "d0", "d1", "d2", "a0", "a2", "memory"
-    );
-}
+/* External MXDRV functions from mxdrv_asm.s (known working implementation) */
+extern int mxdrv_call(int func);
+extern void mxdrv_play(void *data);
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
