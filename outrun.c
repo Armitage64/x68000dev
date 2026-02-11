@@ -70,28 +70,41 @@ int load_mxdrv(void) {
     static char mxdrv_path[] = "MXDRV.X";
     static char mxdrv_cmdline[] = "";
 
+    printf("Loading MXDRV driver...\r\n");
+    fflush(stdout);
+
     /* Load MXDRV.X as a process using DOS EXEC (0x4b) */
+    /* Stack order (bottom to top): cmdline, filename, mode, function */
     __asm__ volatile (
         "movea.l %1,%%a0\n\t"            /* Move path to address register */
         "movea.l %2,%%a1\n\t"            /* Move cmdline to address register */
-        "move.w #0x4b,-(%%sp)\n\t"       /* DOS _EXEC function */
-        "pea (%%a1)\n\t"                 /* Command line */
-        "move.w #0,-(%%sp)\n\t"          /* Mode = 0 (load only) */
-        "pea (%%a0)\n\t"                 /* File path */
+        "pea (%%a1)\n\t"                 /* Push command line (first param) */
+        "pea (%%a0)\n\t"                 /* Push file path (second param) */
+        "move.w #0,-(%%sp)\n\t"          /* Push mode = 0 (load only) */
+        "move.w #0x4b,-(%%sp)\n\t"       /* Push DOS _EXEC function */
         "trap #15\n\t"                   /* DOS call */
-        "lea 12(%%sp),%%sp\n\t"          /* Clean up stack */
+        "lea 12(%%sp),%%sp\n\t"          /* Clean up stack (2+2+4+4=12 bytes) */
         "move.l %%d0,%0"                 /* Save result */
         : "=r" (result)
         : "g" (mxdrv_path), "g" (mxdrv_cmdline)
         : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
     );
 
+    printf("EXEC result: %d\r\n", result);
+    fflush(stdout);
+
     if (result < 0) {
         return -1;
     }
 
+    printf("Initializing MXDRV...\r\n");
+    fflush(stdout);
+
     /* Initialize MXDRV */
     mxdrv_call(MXDRV_START);
+
+    printf("MXDRV initialized.\r\n");
+    fflush(stdout);
 
     return 0;
 }
