@@ -7,7 +7,7 @@ echo Building Out Run Music Player (C version)...
 
 REM Set paths to tools
 set GCC=human68k-gcc.exe
-set VASM=C:\dev\vbcc\bin\vasmm68k_mot.exe
+set OBJCOPY=human68k-objcopy.exe
 
 REM Check if compiler is available
 where %GCC% >nul 2>&1
@@ -19,26 +19,33 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Compile C source to assembly
-echo Compiling C source to assembly...
-%GCC% -m68000 -O2 -Wall -S -o outrun.s outrun.c
+REM Check if objcopy is available
+where %OBJCOPY% >nul 2>&1
+if errorlevel 1 (
+    echo ERROR: %OBJCOPY% not found in PATH
+    echo Please install binutils-2.22-human68k
+    exit /b 1
+)
+
+REM Compile and link the C source (with inline assembly)
+echo Compiling C source...
+%GCC% -m68000 -O2 -Wall -c -o outrun.o outrun.c
 
 if errorlevel 1 (
     echo ERROR: C compilation failed!
     exit /b 1
 )
 
-REM Assemble to X68000 format using vasm (known to work)
-echo Assembling to X68000 format...
-%VASM% -Fxfile -o outrunc.x -nosym outrun.s
+echo Linking...
+%GCC% -m68000 -o outrunc.x outrun.o -ldos -liocs
 
 if errorlevel 1 (
-    echo ERROR: Assembly failed!
+    echo ERROR: Linking failed!
     exit /b 1
 )
 
 REM Clean up intermediate files
-if exist outrun.s del outrun.s
+if exist outrun.o del outrun.o
 
 echo Build successful! Output: outrunc.x
 echo.
