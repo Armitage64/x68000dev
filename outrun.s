@@ -141,22 +141,17 @@ error_mxdrv:
 * Load MXDRV driver
 * ============================================================================
 load_mxdrv:
-	* Load MXDRV.X as a process
-	move.w	#0,-(sp)		* mode
-	move.w	#0,-(sp)		* load only
-	pea	mxdrv_path
-	move.w	#_EXEC,-(sp)
-	trap	#15
-	lea	12(sp),sp
-
-	tst.l	d0
-	bmi	.error
-
-	* Initialize MXDRV
-	move.w	#MXDRV_START,-(sp)
+	* Check if MXDRV is already loaded
+	* Call MXDRV_STAT to test if it's resident
+	move.w	#MXDRV_STAT,-(sp)
 	trap	#10
 	addq.l	#2,sp
 
+	* If MXDRV_STAT returns < 0, MXDRV is not loaded
+	tst.w	d0
+	bmi	.error
+
+	* MXDRV is loaded and ready
 	moveq	#0,d0
 	rts
 
