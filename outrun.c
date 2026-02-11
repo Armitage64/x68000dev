@@ -39,31 +39,33 @@ Track tracks[] = {
     {"Last Wave",            "LAST.MDX",    "Now playing: Last Wave\r\n"}
 };
 
-/* MXDRV interface using trap #10 - function number pushed on stack */
+/* MXDRV interface using trap #10 - simpler inline assembly */
 int mxdrv_call(int func) {
-    int result;
+    register int result __asm__("d0");
+    register int funcnum __asm__("d1") = func;
 
     __asm__ volatile (
-        "move.w %1,-(%%sp)\n\t"
+        "move.w %%d1,-(%%sp)\n\t"
         "trap #10\n\t"
-        "addq.l #2,%%sp\n\t"
-        "move.w %%d0,%0"
+        "addq.l #2,%%sp"
         : "=r" (result)
-        : "g" ((short)func)
-        : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
+        : "r" (funcnum)
+        : "d1", "d2", "a0", "a1", "a2", "memory"
     );
 
     return result;
 }
 
 void mxdrv_play(void *data) {
+    register void *mdx_data __asm__("a1") = data;
+
     __asm__ volatile (
-        "move.l %0,-(%%sp)\n\t"
+        "move.l %%a1,-(%%sp)\n\t"
         "move.w #3,-(%%sp)\n\t"
         "trap #10\n\t"
         "addq.l #6,%%sp"
         :
-        : "g" (data)
+        : "r" (mdx_data)
         : "d0", "d1", "d2", "a0", "a1", "a2", "memory"
     );
 }
