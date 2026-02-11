@@ -263,10 +263,9 @@ print_string:
 	cmp.b	#'$',d1
 	beq	.done
 	and.w	#$ff,d1			* Clear upper byte
-	move.w	d1,-(sp)
-	move.w	#$20,-(sp)		* IOCS _B_PUTC function
+	move.w	#$02,-(sp)		* IOCS _B_PUTC function
 	trap	#14			* IOCS trap
-	addq.w	#4,sp
+	addq.w	#2,sp
 	bra	.loop
 .done:
 	movem.l	(sp)+,d0-d2/a0-a2
