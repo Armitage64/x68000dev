@@ -6,8 +6,8 @@
 AS = vasmm68k_mot
 ASFLAGS = -Fhunk -nosym
 
-CC = m68k-human68k-gcc
-OBJCOPY = m68k-human68k-objcopy
+CC = human68k-gcc
+OBJCOPY = human68k-objcopy
 CFLAGS = -m68000 -O2 -Wall
 LDFLAGS = -ldos -liocs
 
@@ -49,7 +49,7 @@ help:
 	@echo "Targets:"
 	@echo "  all    - Build both assembly and C versions"
 	@echo "  asm    - Build assembly version (outrun.x)"
-	@echo "  c      - Build C version (outrun_c.x)"
+	@echo "  c      - Build C version (outrunc.x)"
 	@echo "  clean  - Remove built files"
 	@echo "  help   - Show this help message"
 	@echo ""

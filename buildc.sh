@@ -6,8 +6,8 @@
 echo "Building Out Run Music Player (C version)..."
 
 # Set paths to tools (adjust these to your installation)
-GCC="m68k-human68k-gcc"
-OBJCOPY="m68k-human68k-objcopy"
+GCC="human68k-gcc"
+OBJCOPY="human68k-objcopy"
 
 # Check if compiler is available
 if ! command -v $GCC &> /dev/null; then

@@ -6,8 +6,8 @@ REM ============================================================================
 echo Building Out Run Music Player (C version)...
 
 REM Set paths to tools
-set GCC=m68k-human68k-gcc.exe
-set OBJCOPY=m68k-human68k-objcopy.exe
+set GCC=human68k-gcc.exe
+set OBJCOPY=human68k-objcopy.exe
 
 REM Check if compiler is available
 where %GCC% >nul 2>&1
