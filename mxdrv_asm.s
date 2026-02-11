@@ -21,12 +21,14 @@ mxdrv_call:
 	.global	mxdrv_play
 	.type	mxdrv_play,@function
 mxdrv_play:
-	movem.l	%d1/%a1,-(%sp)	| Save registers
-	move.l	12(%sp),%a1	| A1 = MDX data pointer
-	move.l	#0x10000,%d1	| D1 = max size (64K)
+	move.l	%d1,-(%sp)	| Save D1
+	move.l	%a1,-(%sp)	| Save A1
+	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+4+4=12)
+	move.l	#65536,%d1	| D1 = max size (64K)
 	move.l	#2,%d0		| D0 = SETMDX function
 	trap	#4		| Load MDX data
 	move.l	#4,%d0		| D0 = PLAY function
 	trap	#4		| Start playback
-	movem.l	(%sp)+,%d1/%a1	| Restore registers
+	move.l	(%sp)+,%a1	| Restore A1
+	move.l	(%sp)+,%d1	| Restore D1
 	rts			| Return
