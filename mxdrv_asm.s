@@ -8,7 +8,7 @@
 | int mxdrv_call(int func);
 | Call MXDRV with function number in func
 | Returns result in D0
-	.global	mxdrv_call
+	.globl	mxdrv_call
 mxdrv_call:
 	move.l	4(%sp),%d0	| Get function number (32-bit int)
 	move.w	%d0,-(%sp)	| Push only low 16 bits
@@ -18,7 +18,7 @@ mxdrv_call:
 
 | void mxdrv_play(void *data);
 | Call MXDRV play function with MDX data pointer
-	.global	mxdrv_play
+	.globl	mxdrv_play
 mxdrv_play:
 	move.l	4(%sp),-(%sp)	| Push data pointer (4 bytes)
 	move.w	#3,-(%sp)	| Push function number 3 (MXDRV_PLAY) (2 bytes)
