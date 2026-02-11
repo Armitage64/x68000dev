@@ -251,21 +251,22 @@ play_track:
 	rts
 
 * ============================================================================
-* Print a '$' terminated string using IOCS B_PUTC
+* Print a '$' terminated string using DOS CONOUT
 * Parameters:
 *   a1 = pointer to string
 * ============================================================================
 print_string:
 	movem.l	d0-d2/a0-a2,-(sp)
 .loop:
-	move.b	(a1)+,d1
+	move.b	(a1)+,d2
 	beq	.done
-	cmp.b	#'$',d1
+	cmp.b	#'$',d2
 	beq	.done
-	and.w	#$ff,d1			* Clear upper byte
-	move.w	#$02,-(sp)		* IOCS _B_PUTC function
-	trap	#14			* IOCS trap
-	addq.w	#2,sp
+	and.l	#$ff,d2			* Clear upper bits
+	move.w	d2,-(sp)		* Character
+	move.w	#$02,-(sp)		* DOS function 2 (CONOUT)
+	trap	#15			* DOS call
+	addq.l	#4,sp
 	bra	.loop
 .done:
 	movem.l	(sp)+,d0-d2/a0-a2
