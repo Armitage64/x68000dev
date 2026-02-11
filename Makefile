@@ -4,7 +4,7 @@
 
 # Toolchain settings
 AS = vasmm68k_mot
-ASFLAGS = -Fhunk -nosym
+ASFLAGS = -Fxfile -nosym
 
 CC = human68k-gcc
 OBJCOPY = human68k-objcopy
