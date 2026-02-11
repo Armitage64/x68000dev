@@ -4,8 +4,7 @@
 * This program plays the four Out Run music tracks using MXDRV
 * ============================================================================
 
-	.cpu 68000
-	.text
+	section text
 
 * Human68k DOS call numbers
 _PRINT		equ	$09
@@ -72,7 +71,7 @@ main_loop:
 	beq	exit_program
 	cmp.b	#'q',d0
 	beq	exit_program
-	cmp.b	#$1b		* ESC key
+	cmp.b	#$1b,d0		* ESC key
 	beq	exit_program
 
 	bra	main_loop
@@ -270,11 +269,11 @@ play_track:
 * ============================================================================
 * Data section
 * ============================================================================
-	.data
+	section data
 
 banner:
-	dc.b	$1b,'[2J'		* Clear screen
-	dc.b	$1b,'[H'		* Home cursor
+	dc.b	$1b,'[','2','J'		* Clear screen
+	dc.b	$1b,'[','H'		* Home cursor
 	dc.b	'============================================',$0d,$0a
 	dc.b	'   OUT RUN Music Player for X68000',$0d,$0a
 	dc.b	'============================================',$0d,$0a
@@ -345,6 +344,6 @@ splash_file:
 last_file:
 	dc.b	'LAST.MDX',0
 
-	.even
+	even
 
-	.end
+	end
