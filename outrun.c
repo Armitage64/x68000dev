@@ -153,19 +153,28 @@ int play_track(int track_num) {
         return -1;
     }
 
-    /* Try to set PDX file (PCM samples) */
+    /* Try to set PDX file (PCM samples) - only if file exists */
     /* Build PDX filename by replacing .MDX with .PDX */
     strcpy(pdx_filename, track->filename);
     strcpy(pdx_filename + strlen(pdx_filename) - 4, ".PDX");
 
-    printf("DEBUG: Setting PDX file to %s\r\n", pdx_filename);
+    printf("DEBUG: Checking for PDX file: %s\r\n", pdx_filename);
     fflush(stdout);
 
-    result = mxdrv_set_pdx(pdx_filename);
-    printf("DEBUG: SETPDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
-    fflush(stdout);
+    /* Check if PDX file exists */
+    fp = fopen(pdx_filename, "rb");
+    if (fp) {
+        fclose(fp);
+        printf("DEBUG: PDX file found, setting it...\r\n");
+        fflush(stdout);
 
-    /* PDX is optional, so don't fail if it's not found */
+        result = mxdrv_set_pdx(pdx_filename);
+        printf("DEBUG: SETPDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
+        fflush(stdout);
+    } else {
+        printf("DEBUG: PDX file not found (this is OK - PDX is optional)\r\n");
+        fflush(stdout);
+    }
 
     /* Start playback */
     result = mxdrv_call(MXDRV_PLAY);
