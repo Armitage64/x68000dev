@@ -262,14 +262,25 @@ int main(void) {
 
     /* Main loop */
     print_menu();
+    printf("DEBUG: Entering main loop, press a key...\r\n");
+    fflush(stdout);
 
     while (running) {
         int i;
+        int key_status;
 
         /* Check if a key is available (non-blocking) */
-        if (dos_keysns()) {
+        key_status = dos_keysns();
+
+        if (key_status != 0) {
+            printf("DEBUG: dos_keysns() returned %d (0x%04x)\r\n", key_status, key_status & 0xFFFF);
+            fflush(stdout);
+
             /* Read the character */
             ch = dos_inkey();
+            printf("DEBUG: dos_inkey() returned '%c' (%d / 0x%02x)\r\n",
+                   ch >= 32 && ch < 127 ? ch : '?', ch, ch);
+            fflush(stdout);
 
             /* Process input */
             switch (toupper(ch)) {
