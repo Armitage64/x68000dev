@@ -1,0 +1,99 @@
+* ============================================================================
+* MXDRV wrapper functions for XC compiler (Motorola assembler syntax)
+* ============================================================================
+* MXDRV calling convention (from x68kd11s disassembly):
+*   - trap #4 (MXDRV music driver trap)
+*   - D0 = function number (0-31)
+*   - D1 = parameter 1 (e.g., channel mask for PLAY)
+*   - A1 = parameter 2 (e.g., MDX data pointer)
+*   - A2 = parameter 3 (e.g., voice/PDX data pointer, or 0)
+*   - Parameters passed in REGISTERS, not on stack
+*   - Return value in D0
+* ============================================================================
+
+	.text
+
+* int mxdrv_call(int func);
+* Call MXDRV with function number in D0 (register-based)
+* Returns result in D0
+	.xdef	_mxdrv_call
+_mxdrv_call:
+	movem.l	d1-d7/a0-a6,-(sp)	; Save all registers except D0
+	move.l	60(sp),d0		; Get function number in D0 (4 + 56 bytes saved = 60)
+	trap	#4			; Call MXDRV
+	movem.l	(sp)+,d1-d7/a0-a6	; Restore all registers
+	rts				; Return with result in D0
+
+* int mxdrv_setmdx(void *data);
+* Load MDX data using MXDRV SETMDX function (function 2)
+* A1=MDX pointer, A2=0 (no PDX)
+* Returns D0 (error code or 0 if success)
+	.xdef	_mxdrv_setmdx
+_mxdrv_setmdx:
+	movem.l	a1-a2,-(sp)		; Save registers (8 bytes)
+	move.l	12(sp),a1		; A1 = MDX data pointer (4+8=12)
+	suba.l	a2,a2			; A2 = 0 (no PDX data)
+	move.l	#2,d0			; D0 = SETMDX function
+	trap	#4			; Call MXDRV SETMDX
+	movem.l	(sp)+,a1-a2		; Restore registers
+	rts				; Return with result in D0
+
+* int mxdrv_play_only(void);
+* Start playback using MXDRV PLAY function
+* Function 4 = L_PLAY, Function 15 (0x0F) = L_PlayWithMask
+* MUST call mxdrv_setmdx first!
+* Returns D0 (error code or 0 if success)
+	.xdef	_mxdrv_play_only
+_mxdrv_play_only:
+	movem.l	d1/a1-a2,-(sp)		; Save registers
+	moveq	#0,d1			; D1 = 0
+	suba.l	a1,a1			; A1 = 0
+	suba.l	a2,a2			; A2 = 0
+	move.l	#4,d0			; D0 = 4 (L_PLAY)
+	trap	#4			; Call MXDRV
+	movem.l	(sp)+,d1/a1-a2		; Restore registers
+	rts				; Return with result in D0
+
+* int mxdrv_play(void *data);
+* Load MDX data and play it using MXDRV
+* IMPORTANT: Must call SETMDX (function 2) BEFORE PLAY (function 4)!
+* SETMDX: D0=2, A1=MDX pointer, A2=0 (no PDX)
+* PLAY:   D0=4, D1=$FFFF (all channels), takes NO parameters
+* Returns D0 (error code or status from PLAY)
+	.xdef	_mxdrv_play
+_mxdrv_play:
+	movem.l	d1/a1-a2,-(sp)		; Save registers (12 bytes)
+	move.l	16(sp),a1		; A1 = MDX data pointer (4+12=16)
+
+	* Step 1: Call SETMDX to load the MDX data
+	suba.l	a2,a2			; A2 = 0 (no PDX data)
+	move.l	#2,d0			; D0 = SETMDX function
+	trap	#4			; Call MXDRV SETMDX
+	tst.l	d0			; Check return value
+	bne	.play_error		; If error, return immediately
+
+	* Step 2: Call PLAY to start playback (takes no parameters!)
+	move.w	#$FFFF,d1		; D1 = channel mask (all channels)
+	move.l	#4,d0			; D0 = PLAY function
+	trap	#4			; Call MXDRV PLAY
+
+.play_error:
+	movem.l	(sp)+,d1/a1-a2		; Restore registers
+	rts				; Return with result in D0
+
+* void* mxdrv_get_work_area(void);
+* Get MXDRV work area pointer (function 0)
+* Returns pointer to work area in D0
+	.xdef	_mxdrv_get_work_area
+_mxdrv_get_work_area:
+	move.l	#0,d0			; D0 = 0 (get work area function)
+	trap	#4			; Call MXDRV
+	rts				; Return with work area pointer in D0
+
+* void* mxdrv_get_work_ptr(void);
+* Alias for mxdrv_get_work_area
+	.xdef	_mxdrv_get_work_ptr
+_mxdrv_get_work_ptr:
+	bra	_mxdrv_get_work_area	; Jump to main function
+
+	.end
