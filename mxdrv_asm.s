@@ -26,6 +26,36 @@ mxdrv_call:
 	movem.l	(%sp)+,%d1-%d7/%a0-%a6	| Restore all registers
 	rts			| Return with result in D0
 
+| int mxdrv_setmdx(void *data);
+| Load MDX data using MXDRV SETMDX function (function 2)
+| A1=MDX pointer, A2=0 (no PDX)
+| Returns D0 (error code or 0 if success)
+	.global	mxdrv_setmdx
+	.type	mxdrv_setmdx,@function
+mxdrv_setmdx:
+	movem.l	%a1-%a2,-(%sp)	| Save registers (8 bytes)
+	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
+	suba.l	%a2,%a2		| A2 = 0 (no PDX data)
+	move.l	#2,%d0		| D0 = SETMDX function
+	trap	#4		| Call MXDRV SETMDX
+	movem.l	(%sp)+,%a1-%a2	| Restore registers
+	rts			| Return with result in D0
+
+| int mxdrv_play_only(void);
+| Start playback using MXDRV PLAY function (function 4)
+| MUST call mxdrv_setmdx first! PLAY takes no parameters.
+| D1=$FFFF (all channels)
+| Returns D0 (error code or 0 if success)
+	.global	mxdrv_play_only
+	.type	mxdrv_play_only,@function
+mxdrv_play_only:
+	movem.l	%d1,-(%sp)	| Save D1 (4 bytes)
+	move.w	#0xFFFF,%d1	| D1 = channel mask (all channels)
+	move.l	#4,%d0		| D0 = PLAY function
+	trap	#4		| Call MXDRV PLAY
+	movem.l	(%sp)+,%d1	| Restore D1
+	rts			| Return with result in D0
+
 | int mxdrv_play(void *data);
 | Load MDX data and play it using MXDRV
 | IMPORTANT: Must call SETMDX (function 2) BEFORE PLAY (function 4)!

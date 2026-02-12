@@ -41,9 +41,9 @@ Track tracks[] = {
 
 /* MXDRV interface - implemented in mxdrv_asm.s */
 extern int mxdrv_call(int func);
-extern int mxdrv_set_mdx(void *data, int size);
-extern int mxdrv_set_pdx(const char *filename);
-extern int mxdrv_play(void *data);
+extern int mxdrv_setmdx(void *data);      /* Load MDX data (function 2) */
+extern int mxdrv_play_only(void);         /* Start playback (function 4) */
+extern int mxdrv_play(void *data);        /* Combined: SETMDX + PLAY */
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
@@ -107,15 +107,29 @@ int play_track(int track_num) {
     }
 
     /* Load and play the MDX data */
-    printf("Calling MXDRV PLAY (read %ld bytes)...\r\n", bytes_read);
-    result = mxdrv_play(mdx_buffer);
-    printf("MXDRV PLAY returned: 0x%08X\r\n", result);
+    printf("Read %ld bytes from file.\r\n", bytes_read);
+
+    /* Step 1: Load MDX data with SETMDX */
+    printf("Calling MXDRV SETMDX...\r\n");
+    result = mxdrv_setmdx(mdx_buffer);
+    printf("SETMDX returned: 0x%08X\r\n", result);
 
     if (result != 0) {
-        printf("WARNING: MXDRV PLAY returned error code 0x%08X\r\n", result);
-    } else {
-        printf("Track loaded successfully!\r\n");
+        printf("ERROR: SETMDX failed with code 0x%08X\r\n", result);
+        return -1;
     }
+
+    /* Step 2: Start playback with PLAY */
+    printf("Calling MXDRV PLAY...\r\n");
+    result = mxdrv_play_only();
+    printf("PLAY returned: 0x%08X\r\n", result);
+
+    if (result != 0) {
+        printf("ERROR: PLAY failed with code 0x%08X\r\n", result);
+        return -1;
+    }
+
+    printf("Music should be playing now!\r\n");
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
     /* Buffer will be freed when loading next track or when program exits */
