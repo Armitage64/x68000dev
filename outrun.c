@@ -156,57 +156,14 @@ int play_track(int track_num) {
     printf("DEBUG: Read %d bytes from %s\r\n", (int)bytes_read, track->filename);
     fflush(stdout);
 
-    /* Load MDX data into MXDRV */
-    result = mxdrv_set_mdx(mdx_buffer, (int)bytes_read);
-    printf("DEBUG: SETMDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
+    /* Try using the integrated mxdrv_play function that does SETMDX+PLAY in one go */
+    printf("DEBUG: Calling mxdrv_play (does SETMDX+PLAY in assembly)...\r\n");
     fflush(stdout);
 
-    if (result < 0) {
-        printf("ERROR: Failed to load MDX data (error %d)\r\n", result);
-        free(mdx_buffer_orig);
-        mdx_buffer_orig = NULL;
-        mdx_buffer = NULL;
-        return -1;
-    }
+    mxdrv_play(mdx_buffer);
 
-    /* Try to set PDX file (PCM samples) - only if file exists */
-    /* Build PDX filename by replacing .MDX with .PDX */
-    strcpy(pdx_filename, track->filename);
-    strcpy(pdx_filename + strlen(pdx_filename) - 4, ".PDX");
-
-    printf("DEBUG: Checking for PDX file: %s\r\n", pdx_filename);
+    printf("DEBUG: mxdrv_play completed!\r\n");
     fflush(stdout);
-
-    /* Check if PDX file exists */
-    fp = fopen(pdx_filename, "rb");
-    if (fp) {
-        fclose(fp);
-        printf("DEBUG: PDX file found, setting it...\r\n");
-        fflush(stdout);
-
-        result = mxdrv_set_pdx(pdx_filename);
-        printf("DEBUG: SETPDX(\"%s\") returned %d (0x%04x)\r\n", pdx_filename, result, result & 0xFFFF);
-        fflush(stdout);
-    } else {
-        printf("DEBUG: PDX file not found - skipping SETPDX (will try PLAY anyway)\r\n");
-        fflush(stdout);
-        /* Don't call SETPDX if no PDX file - just skip it */
-    }
-
-    /* Start playback */
-    printf("DEBUG: About to call PLAY (func=0x%02x)...\r\n", MXDRV_PLAY);
-    fflush(stdout);
-
-    result = mxdrv_call(MXDRV_PLAY);
-
-    printf("DEBUG: PLAY returned %d (0x%04x)\r\n", result, result & 0xFFFF);
-    fflush(stdout);
-
-    if (result < 0) {
-        printf("ERROR: Failed to start playback (error %d)\r\n", result);
-        /* Don't free buffer here - keep it for MXDRV */
-        return -1;
-    }
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
     /* Buffer will be freed when loading next track or when program exits */
