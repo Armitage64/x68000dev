@@ -1,9 +1,8 @@
 | ============================================================================
 | MXDRV wrapper functions in pure assembly (GCC assembler syntax)
 | ============================================================================
-| Based on mdxtools: https://github.com/vampirefrog/mdxtools
-| MXDRV calling convention:
-|   - trap #4 (music driver trap)
+| MXDRV calling convention for X68000:
+|   - trap #10 (MXDRV music driver trap)
 |   - D0 = function number
 |   - D1, A1, A2 = parameters (depending on function)
 |   - Parameters passed in REGISTERS, not on stack
@@ -22,7 +21,7 @@
 mxdrv_call:
 	movem.l	%d1-%d7/%a0-%a6,-(%sp)	| Save all registers except D0
 	move.l	60(%sp),%d0	| Get function number in D0 (4 + 56 bytes saved = 60)
-	trap	#4		| Call MXDRV (trap #4 for music drivers)
+	trap	#10		| Call MXDRV (trap #10 for X68000 MXDRV)
 	movem.l	(%sp)+,%d1-%d7/%a0-%a6	| Restore all registers
 	rts			| Return with result in D0
 
@@ -36,7 +35,7 @@ mxdrv_set_mdx:
 	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
 	move.l	16(%sp),%d1	| D1 = size (4+8+4=16)
 	move.l	#2,%d0		| D0 = SETMDX function
-	trap	#4		| Load MDX data into MXDRV
+	trap	#10		| Load MDX data into MXDRV
 	movem.l	(%sp)+,%d1/%a1	| Restore registers
 	rts			| Return with result in D0
 
@@ -49,7 +48,7 @@ mxdrv_set_pdx:
 	move.l	%a1,-(%sp)	| Save A1 (4 bytes)
 	move.l	8(%sp),%a1	| A1 = filename pointer (4+4=8)
 	move.l	#3,%d0		| D0 = SETPDX function
-	trap	#4		| Set PDX file path
+	trap	#10		| Set PDX file path
 	move.l	(%sp)+,%a1	| Restore A1
 	rts			| Return with result in D0
 
@@ -63,8 +62,8 @@ mxdrv_play:
 	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
 	move.l	#65536,%d1	| D1 = max size (64K)
 	move.l	#2,%d0		| D0 = SETMDX function
-	trap	#4		| Load MDX data into MXDRV
+	trap	#10		| Load MDX data into MXDRV
 	move.l	#4,%d0		| D0 = PLAY function
-	trap	#4		| Start playback
+	trap	#10		| Start playback
 	movem.l	(%sp)+,%d1/%a1	| Restore registers
 	rts			| Return
