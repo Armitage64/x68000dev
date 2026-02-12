@@ -188,13 +188,9 @@ int play_track(int track_num) {
         printf("DEBUG: SETPDX(\"%s\") returned %d (0x%04x)\r\n", pdx_filename, result, result & 0xFFFF);
         fflush(stdout);
     } else {
-        printf("DEBUG: PDX file not found - calling SETPDX(NULL)...\r\n");
+        printf("DEBUG: PDX file not found - skipping SETPDX (will try PLAY anyway)\r\n");
         fflush(stdout);
-
-        /* Must call SETPDX even when no PDX file - pass NULL to indicate no PDX */
-        result = mxdrv_set_pdx(NULL);
-        printf("DEBUG: SETPDX(NULL) returned %d (0x%04x)\r\n", result, result & 0xFFFF);
-        fflush(stdout);
+        /* Don't call SETPDX if no PDX file - just skip it */
     }
 
     /* Start playback */

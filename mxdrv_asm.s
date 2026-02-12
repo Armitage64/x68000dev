@@ -16,11 +16,14 @@
 | int mxdrv_call(int func);
 | Call MXDRV with function number in D0
 | Returns result in D0
+| Save ALL registers except D0 (just to be safe)
 	.global	mxdrv_call
 	.type	mxdrv_call,@function
 mxdrv_call:
-	move.l	4(%sp),%d0	| Get function number in D0
+	movem.l	%d1-%d7/%a0-%a6,-(%sp)	| Save all registers except D0
+	move.l	60(%sp),%d0	| Get function number in D0 (4 + 56 bytes saved = 60)
 	trap	#4		| Call MXDRV (trap #4 for music drivers)
+	movem.l	(%sp)+,%d1-%d7/%a0-%a6	| Restore all registers
 	rts			| Return with result in D0
 
 | int mxdrv_set_mdx(void *data, int size);
