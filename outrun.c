@@ -92,9 +92,7 @@ int play_track(int track_num) {
     static void *mdx_buffer = NULL;  /* Static buffer that persists - MXDRV keeps pointer to it! */
     static void *mdx_buffer_orig = NULL;  /* Original malloc pointer for free() */
     size_t bytes_read;
-    int result;
     Track *track;
-    char pdx_filename[256];  /* Function-level so MXDRV can access it during playback */
 
     if (track_num < 0 || track_num >= 4) {
         return -1;
@@ -238,13 +236,11 @@ int dos_inkey(void) {
     return ch & 0xFF;
 }
 
-/* Simple delay loop */
-void delay_ms(int ms) {
-    volatile int i, j;
-    for (i = 0; i < ms; i++) {
-        for (j = 0; j < 1000; j++) {
-            /* Busy wait */
-        }
+/* Simple delay loop - very short to keep responsive */
+void delay_short(void) {
+    volatile int i;
+    for (i = 0; i < 100; i++) {
+        /* Busy wait - just enough to not hog CPU */
     }
 }
 
@@ -268,8 +264,7 @@ int main(void) {
     print_menu();
 
     while (running) {
-        /* Call MXDRV interrupt handler to advance music playback */
-        mxdrv_int();
+        int i;
 
         /* Check if a key is available (non-blocking) */
         if (dos_keysns()) {
@@ -305,8 +300,12 @@ int main(void) {
             }
         }
 
-        /* Small delay to avoid consuming 100% CPU */
-        delay_ms(10);
+        /* Call MXDRV interrupt handler periodically to advance music playback */
+        /* Call it multiple times per loop iteration for smoother playback */
+        for (i = 0; i < 5; i++) {
+            mxdrv_int();
+            delay_short();
+        }
     }
 
     /* Cleanup - stop music but don't unload MXDRV (we didn't load it) */
