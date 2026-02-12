@@ -95,3 +95,10 @@ mxdrv_get_work_area:
 	move.l	#0,%d0		| D0 = 0 (get work area function)
 	trap	#4		| Call MXDRV
 	rts			| Return with work area pointer in D0
+
+| void* mxdrv_get_work_ptr(void);
+| Alias for mxdrv_get_work_area
+	.global	mxdrv_get_work_ptr
+	.type	mxdrv_get_work_ptr,@function
+mxdrv_get_work_ptr:
+	bra	mxdrv_get_work_area	| Jump to main function
