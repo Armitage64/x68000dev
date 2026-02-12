@@ -50,7 +50,7 @@ mxdrv_setmdx:
 	.type	mxdrv_play_only,@function
 mxdrv_play_only:
 	movem.l	%d1/%a1-%a2,-(%sp)	| Save registers
-	moveq	#0,%d1		| D1 = 0
+	move.w	#0xFFFF,%d1	| D1 = 0xFFFF (all channels)
 	suba.l	%a1,%a1		| A1 = 0
 	suba.l	%a2,%a2		| A2 = 0
 	move.l	#4,%d0		| D0 = 4 (L_PLAY)
