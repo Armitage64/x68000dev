@@ -109,8 +109,15 @@ int play_track(int track_num) {
     /* Load and play the MDX data */
     printf("Read %ld bytes from file.\r\n", bytes_read);
 
+    /* Debug: Show first bytes of MDX */
+    printf("First 16 bytes: ");
+    for (int i = 0; i < 16 && i < bytes_read; i++) {
+        printf("%02X ", (unsigned char)mdx_buffer[i]);
+    }
+    printf("\r\n");
+
     /* Step 1: Load MDX data with SETMDX */
-    printf("Calling MXDRV SETMDX...\r\n");
+    printf("Calling MXDRV SETMDX (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
     result = mxdrv_setmdx(mdx_buffer);
     printf("SETMDX returned: 0x%08X\r\n", result);
 
