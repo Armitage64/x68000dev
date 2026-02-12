@@ -49,11 +49,8 @@ mxdrv_setmdx:
 	.global	mxdrv_play_only
 	.type	mxdrv_play_only,@function
 mxdrv_play_only:
-	movem.l	%d1,-(%sp)	| Save D1
-	move.w	#0xFFFF,%d1	| D1 = all channels
-	move.l	#0x0F,%d0	| D0 = 15 (L_PlayWithMask) - uses D1 channel mask
+	move.l	#4,%d0		| D0 = 4 (L_PLAY) - clears channel mask
 	trap	#4		| Call MXDRV
-	movem.l	(%sp)+,%d1	| Restore D1
 	rts			| Return with result in D0
 
 | int mxdrv_play(void *data);
