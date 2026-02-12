@@ -68,15 +68,3 @@ mxdrv_play:
 	trap	#4		| Start playback
 	movem.l	(%sp)+,%d1/%a1	| Restore registers
 	rts			| Return
-
-| void mxdrv_int(void);
-| Call MXDRV interrupt handler - must be called periodically for music playback
-| This is typically function 0x0A or the interrupt entry point
-	.global	mxdrv_int
-	.type	mxdrv_int,@function
-mxdrv_int:
-	movem.l	%d0-%d7/%a0-%a6,-(%sp)	| Save all registers
-	move.l	#0x0A,%d0	| D0 = INT function (interrupt handler)
-	trap	#4		| Call MXDRV interrupt
-	movem.l	(%sp)+,%d0-%d7/%a0-%a6	| Restore all registers
-	rts			| Return

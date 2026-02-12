@@ -56,31 +56,19 @@ int load_mxdrv(void) {
     int result;
 
     printf("Checking MXDRV driver...\r\n");
-    printf("\r\n");
-    printf("NOTE: Make sure MXDRV.X is loaded before running!\r\n");
-    printf("      If the system crashes here, run: MXDRV.X\r\n");
-    printf("\r\n");
-    fflush(stdout);
-
-    printf("DEBUG: About to call trap #4 with MXDRV_GET_STATUS (func=0x%02x)...\r\n", MXDRV_GET_STATUS);
-    fflush(stdout);
 
     /* Check if MXDRV is loaded using GET_STATUS */
     result = mxdrv_call(MXDRV_GET_STATUS);
 
-    printf("DEBUG: trap #4 returned successfully! Result = %d (0x%04x)\r\n", result, result & 0xFFFF);
-    fflush(stdout);
-
     if (result < 0) {
-        printf("ERROR: MXDRV not loaded (returned %d / $%04x)\r\n", result, result & 0xFFFF);
+        printf("\r\nERROR: MXDRV not loaded!\r\n");
         printf("Please run MXDRV.X first, then try again.\r\n");
         printf("\r\nPress any key to exit...\r\n");
         dos_inkey();
         return -1;
     }
 
-    printf("MXDRV is loaded and ready (status: %d).\r\n", result);
-    fflush(stdout);
+    printf("MXDRV is ready.\r\n\r\n");
 
     return 0;
 }
@@ -89,7 +77,6 @@ int load_mxdrv(void) {
 int play_track(int track_num) {
     FILE *fp;
     static void *mdx_buffer = NULL;  /* Static buffer that persists - MXDRV keeps pointer to it! */
-    static void *mdx_buffer_orig = NULL;  /* Original malloc pointer for free() */
     size_t bytes_read;
     Track *track;
 
@@ -102,16 +89,11 @@ int play_track(int track_num) {
     /* Stop current music first */
     mxdrv_call(MXDRV_STOP);
 
-    /* Free old buffer if it exists (use original pointer!) */
-    if (mdx_buffer_orig) {
-        free(mdx_buffer_orig);
-        mdx_buffer_orig = NULL;
+    /* Free old buffer if it exists */
+    if (mdx_buffer) {
+        free(mdx_buffer);
         mdx_buffer = NULL;
     }
-
-    /* Print status message */
-    printf("%s", track->message);
-    fflush(stdout);
 
     /* Open the MDX file */
     fp = fopen(track->filename, "rb");
@@ -121,24 +103,12 @@ int play_track(int track_num) {
     }
 
     /* Allocate 64KB buffer for MDX data */
-    /* Add 1 extra byte to ensure we can align to even address */
-    mdx_buffer_orig = malloc(65536 + 1);
-    if (!mdx_buffer_orig) {
+    mdx_buffer = malloc(65536);
+    if (!mdx_buffer) {
         printf("\r\nERROR: Could not allocate memory!\r\n");
         fclose(fp);
         return -1;
     }
-
-    /* Ensure buffer is aligned to even address (required by 68000) */
-    mdx_buffer = mdx_buffer_orig;
-    if ((unsigned long)mdx_buffer & 1) {
-        mdx_buffer = (void *)((unsigned long)mdx_buffer + 1);
-        printf("DEBUG: Aligned buffer from 0x%08lx to 0x%08lx\r\n",
-               (unsigned long)mdx_buffer_orig, (unsigned long)mdx_buffer);
-    } else {
-        printf("DEBUG: Buffer already aligned at 0x%08lx\r\n", (unsigned long)mdx_buffer);
-    }
-    fflush(stdout);
 
     /* Read file into buffer */
     bytes_read = fread(mdx_buffer, 1, 65536, fp);
@@ -146,29 +116,16 @@ int play_track(int track_num) {
 
     if (bytes_read == 0) {
         printf("\r\nERROR: Could not read file data!\r\n");
-        free(mdx_buffer_orig);
-        mdx_buffer_orig = NULL;
+        free(mdx_buffer);
         mdx_buffer = NULL;
         return -1;
     }
 
-    printf("DEBUG: Read %d bytes from %s\r\n", (int)bytes_read, track->filename);
-    fflush(stdout);
-
-    /* Try using the integrated mxdrv_play function that does SETMDX+PLAY in one go */
-    printf("DEBUG: Calling mxdrv_play (does SETMDX+PLAY in assembly)...\r\n");
-    fflush(stdout);
-
+    /* Load and play the MDX data */
     mxdrv_play(mdx_buffer);
-
-    printf("DEBUG: mxdrv_play completed!\r\n");
-    fflush(stdout);
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
     /* Buffer will be freed when loading next track or when program exits */
-
-    printf("Playback started successfully!\r\n");
-    fflush(stdout);
 
     return 0;
 }
