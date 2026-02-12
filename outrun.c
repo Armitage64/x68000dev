@@ -198,7 +198,11 @@ int play_track(int track_num) {
     }
 
     /* Start playback */
+    printf("DEBUG: About to call PLAY (func=0x%02x)...\r\n", MXDRV_PLAY);
+    fflush(stdout);
+
     result = mxdrv_call(MXDRV_PLAY);
+
     printf("DEBUG: PLAY returned %d (0x%04x)\r\n", result, result & 0xFFFF);
     fflush(stdout);
 
