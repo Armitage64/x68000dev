@@ -26,9 +26,10 @@ mxdrv_call:
 	movem.l	(%sp)+,%d1-%d7/%a0-%a6	| Restore all registers
 	rts			| Return with result in D0
 
-| void mxdrv_play(void *data);
+| int mxdrv_play(void *data);
 | Play MDX data using MXDRV function 4 (PLAY)
 | D0=4 (function), D1=$FFFF (all channels), A1=MDX pointer, A2=0 (no PDX)
+| Returns D0 (error code or status)
 	.global	mxdrv_play
 	.type	mxdrv_play,@function
 mxdrv_play:

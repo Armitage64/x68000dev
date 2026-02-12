@@ -43,7 +43,7 @@ Track tracks[] = {
 extern int mxdrv_call(int func);
 extern int mxdrv_set_mdx(void *data, int size);
 extern int mxdrv_set_pdx(const char *filename);
-extern void mxdrv_play(void *data);
+extern int mxdrv_play(void *data);
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
@@ -62,6 +62,7 @@ int play_track(int track_num) {
     FILE *fp;
     static void *mdx_buffer = NULL;  /* Static buffer that persists - MXDRV keeps pointer to it! */
     size_t bytes_read;
+    int result;
     Track *track;
 
     if (track_num < 0 || track_num >= 4) {
@@ -106,7 +107,15 @@ int play_track(int track_num) {
     }
 
     /* Load and play the MDX data */
-    mxdrv_play(mdx_buffer);
+    printf("Calling MXDRV PLAY (read %ld bytes)...\r\n", bytes_read);
+    result = mxdrv_play(mdx_buffer);
+    printf("MXDRV PLAY returned: 0x%08X\r\n", result);
+
+    if (result != 0) {
+        printf("WARNING: MXDRV PLAY returned error code 0x%08X\r\n", result);
+    } else {
+        printf("Track loaded successfully!\r\n");
+    }
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
     /* Buffer will be freed when loading next track or when program exits */
