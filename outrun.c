@@ -46,9 +46,11 @@ extern int mxdrv_call(int func);
 extern int mxdrv_set_mdx(void *data, int size);
 extern int mxdrv_set_pdx(const char *filename);
 extern void mxdrv_play(void *data);
+extern void mxdrv_int(void);  /* Interrupt handler - must be called periodically */
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
+int dos_keysns(void);
 
 /* Initialize MXDRV driver */
 int load_mxdrv(void) {
@@ -206,6 +208,21 @@ void print_menu(void) {
     fflush(stdout);
 }
 
+/* Check if a key is available using DOS _KEYSNS (non-blocking) */
+int dos_keysns(void) {
+    int result;
+    __asm__ volatile (
+        "move.w #0x0B,-(%%sp)\n\t"    /* DOS _KEYSNS function */
+        "trap #15\n\t"                 /* DOS call */
+        "addq.l #2,%%sp\n\t"           /* Clean up stack */
+        "move.w %%d0,%0"               /* Get result */
+        : "=r" (result)
+        :
+        : "d0", "d1", "memory"
+    );
+    return result;
+}
+
 /* Read a character using DOS _INKEY */
 int dos_inkey(void) {
     int ch;
@@ -219,6 +236,16 @@ int dos_inkey(void) {
         : "d0", "d1", "memory"
     );
     return ch & 0xFF;
+}
+
+/* Simple delay loop */
+void delay_ms(int ms) {
+    volatile int i, j;
+    for (i = 0; i < ms; i++) {
+        for (j = 0; j < 1000; j++) {
+            /* Busy wait */
+        }
+    }
 }
 
 /* Main program */
@@ -238,34 +265,48 @@ int main(void) {
     }
 
     /* Main loop */
+    print_menu();
+
     while (running) {
-        print_menu();
+        /* Call MXDRV interrupt handler to advance music playback */
+        mxdrv_int();
 
-        /* Read character using DOS _INKEY (direct DOS call) */
-        ch = dos_inkey();
+        /* Check if a key is available (non-blocking) */
+        if (dos_keysns()) {
+            /* Read the character */
+            ch = dos_inkey();
 
-        /* Process input */
-        switch (toupper(ch)) {
-            case '1':
-                play_track(0);
-                break;
-            case '2':
-                play_track(1);
-                break;
-            case '3':
-                play_track(2);
-                break;
-            case '4':
-                play_track(3);
-                break;
-            case 'S':
-                stop_music();
-                break;
-            case 'Q':
-            case 0x1B:  /* ESC key */
-                running = 0;
-                break;
+            /* Process input */
+            switch (toupper(ch)) {
+                case '1':
+                    play_track(0);
+                    print_menu();
+                    break;
+                case '2':
+                    play_track(1);
+                    print_menu();
+                    break;
+                case '3':
+                    play_track(2);
+                    print_menu();
+                    break;
+                case '4':
+                    play_track(3);
+                    print_menu();
+                    break;
+                case 'S':
+                    stop_music();
+                    print_menu();
+                    break;
+                case 'Q':
+                case 0x1B:  /* ESC key */
+                    running = 0;
+                    break;
+            }
         }
+
+        /* Small delay to avoid consuming 100% CPU */
+        delay_ms(10);
     }
 
     /* Cleanup - stop music but don't unload MXDRV (we didn't load it) */
