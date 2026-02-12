@@ -42,7 +42,7 @@ Track tracks[] = {
 /* MXDRV interface - implemented in mxdrv_asm.s */
 extern int mxdrv_call(int func);
 extern int mxdrv_setmdx(void *data);      /* Load MDX data (function 2) */
-extern int mxdrv_play_only(void);         /* Start playback (function 4) */
+extern int mxdrv_play_only(void *data);   /* Start playback (function 3) - needs MDX ptr! */
 extern int mxdrv_play(void *data);        /* Combined: SETMDX + PLAY */
 extern void* mxdrv_get_work_area(void);   /* Get work area pointer (function 0) */
 
@@ -136,9 +136,9 @@ int play_track(int track_num) {
 
     /* SETMDX successful - MDX data is now loaded */
 
-    /* Step 2: Start playback with PLAY */
-    printf("Calling MXDRV PLAY...\r\n");
-    result = mxdrv_play_only();
+    /* Step 2: Start playback with PLAY (pass MDX pointer again!) */
+    printf("Calling MXDRV PLAY (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
+    result = mxdrv_play_only(mdx_buffer);
     printf("PLAY returned: 0x%08X\r\n", result);
 
     if (result != 0) {

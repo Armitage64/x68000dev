@@ -41,19 +41,19 @@ mxdrv_setmdx:
 	movem.l	(%sp)+,%a1-%a2	| Restore registers
 	rts			| Return with result in D0
 
-| int mxdrv_play_only(void);
+| int mxdrv_play_only(void *mdx_ptr);
 | Start playback using MXDRV PLAY function
 | Function 3 = PLAY (from outrun.s)
-| MUST call mxdrv_setmdx first!
+| PLAY might need the MDX pointer in A1!
 | Returns D0 (error code or 0 if success)
 	.global	mxdrv_play_only
 	.type	mxdrv_play_only,@function
 mxdrv_play_only:
-	movem.l	%d1/%a1-%a2,-(%sp)	| Save registers
+	movem.l	%d1/%a1-%a2,-(%sp)	| Save registers (12 bytes)
+	move.l	16(%sp),%a1	| A1 = MDX pointer (4+12=16)
 	move.w	#0xFFFF,%d1	| D1 = 0xFFFF (all channels)
-	suba.l	%a1,%a1		| A1 = 0
 	suba.l	%a2,%a2		| A2 = 0
-	move.l	#3,%d0		| D0 = 3 (PLAY) - CORRECT!
+	move.l	#3,%d0		| D0 = 3 (PLAY)
 	trap	#4		| Call MXDRV
 	movem.l	(%sp)+,%d1/%a1-%a2	| Restore registers
 	rts			| Return with result in D0
