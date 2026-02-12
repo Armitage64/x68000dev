@@ -44,6 +44,7 @@ extern int mxdrv_call(int func);
 extern int mxdrv_setmdx(void *data);      /* Load MDX data (function 2) */
 extern int mxdrv_play_only(void);         /* Start playback (function 4) */
 extern int mxdrv_play(void *data);        /* Combined: SETMDX + PLAY */
+extern void* mxdrv_get_work_area(void);   /* Get work area pointer (function 0) */
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
@@ -120,6 +121,19 @@ int play_track(int track_num) {
         printf("\r\n");
     }
 
+    /* Check MXDRV work area */
+    {
+        unsigned long *work_area = (unsigned long *)mxdrv_get_work_area();
+        printf("MXDRV work area at: 0x%08lX\r\n", (unsigned long)work_area);
+        if (work_area) {
+            unsigned long mdx_buf_size = work_area[0x0014/4];  /* Offset $0014 / 4 bytes */
+            unsigned long mdx_loaded = work_area[0x0024/4];    /* Offset $0024 / 4 bytes */
+            printf("  MDX buffer size (offset $0014): 0x%08lX (%ld bytes)\r\n",
+                   mdx_buf_size, mdx_buf_size);
+            printf("  MDX loaded flag (offset $0024): 0x%08lX\r\n", mdx_loaded);
+        }
+    }
+
     /* Step 1: Load MDX data with SETMDX */
     printf("Calling MXDRV SETMDX (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
     result = mxdrv_setmdx(mdx_buffer);
@@ -128,6 +142,18 @@ int play_track(int track_num) {
     if (result != 0) {
         printf("ERROR: SETMDX failed with code 0x%08X\r\n", result);
         return -1;
+    }
+
+    /* Check if SETMDX actually set the loaded flag */
+    {
+        unsigned long *work_area = (unsigned long *)mxdrv_get_work_area();
+        if (work_area) {
+            unsigned long mdx_loaded = work_area[0x0024/4];
+            unsigned long mdx_ptr = work_area[0x0010/4];
+            printf("After SETMDX:\r\n");
+            printf("  MDX loaded flag (offset $0024): 0x%08lX\r\n", mdx_loaded);
+            printf("  MDX data ptr (offset $0010): 0x%08lX\r\n", mdx_ptr);
+        }
     }
 
     /* Step 2: Start playback with PLAY */

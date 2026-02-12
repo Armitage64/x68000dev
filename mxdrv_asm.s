@@ -85,3 +85,13 @@ mxdrv_play:
 .play_error:
 	movem.l	(%sp)+,%d1/%a1-%a2	| Restore registers
 	rts			| Return with result in D0
+
+| void* mxdrv_get_work_area(void);
+| Get MXDRV work area pointer (function 0)
+| Returns pointer to work area in D0
+	.global	mxdrv_get_work_area
+	.type	mxdrv_get_work_area,@function
+mxdrv_get_work_area:
+	move.l	#0,%d0		| D0 = 0 (get work area function)
+	trap	#4		| Call MXDRV
+	rts			| Return with work area pointer in D0
