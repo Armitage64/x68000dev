@@ -87,7 +87,7 @@ int load_mxdrv(void) {
 /* Play a track */
 int play_track(int track_num) {
     FILE *fp;
-    void *buffer;
+    static void *mdx_buffer = NULL;  /* Static buffer that persists - MXDRV keeps pointer to it! */
     size_t bytes_read;
     int result;
     Track *track;
@@ -102,6 +102,12 @@ int play_track(int track_num) {
     /* Stop current music first */
     mxdrv_call(MXDRV_STOP);
 
+    /* Free old buffer if it exists */
+    if (mdx_buffer) {
+        free(mdx_buffer);
+        mdx_buffer = NULL;
+    }
+
     /* Print status message */
     printf("%s", track->message);
     fflush(stdout);
@@ -114,20 +120,21 @@ int play_track(int track_num) {
     }
 
     /* Allocate 64KB buffer for MDX data */
-    buffer = malloc(65536);
-    if (!buffer) {
+    mdx_buffer = malloc(65536);
+    if (!mdx_buffer) {
         printf("\r\nERROR: Could not allocate memory!\r\n");
         fclose(fp);
         return -1;
     }
 
     /* Read file into buffer */
-    bytes_read = fread(buffer, 1, 65536, fp);
+    bytes_read = fread(mdx_buffer, 1, 65536, fp);
     fclose(fp);
 
     if (bytes_read == 0) {
         printf("\r\nERROR: Could not read file data!\r\n");
-        free(buffer);
+        free(mdx_buffer);
+        mdx_buffer = NULL;
         return -1;
     }
 
@@ -135,13 +142,14 @@ int play_track(int track_num) {
     fflush(stdout);
 
     /* Load MDX data into MXDRV */
-    result = mxdrv_set_mdx(buffer, (int)bytes_read);
+    result = mxdrv_set_mdx(mdx_buffer, (int)bytes_read);
     printf("DEBUG: SETMDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
     fflush(stdout);
 
     if (result < 0) {
         printf("ERROR: Failed to load MDX data (error %d)\r\n", result);
-        free(buffer);
+        free(mdx_buffer);
+        mdx_buffer = NULL;
         return -1;
     }
 
@@ -166,12 +174,12 @@ int play_track(int track_num) {
 
     if (result < 0) {
         printf("ERROR: Failed to start playback (error %d)\r\n", result);
-        free(buffer);
+        /* Don't free buffer here - keep it for MXDRV */
         return -1;
     }
 
-    /* Free buffer */
-    free(buffer);
+    /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
+    /* Buffer will be freed when loading next track or when program exits */
 
     printf("Playback started successfully!\r\n");
     fflush(stdout);
