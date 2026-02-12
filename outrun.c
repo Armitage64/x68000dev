@@ -73,6 +73,7 @@ int play_track(int track_num) {
     track = &tracks[track_num];
 
     /* Stop current music first */
+    printf("\r\nStopping previous track...\r\n");
     mxdrv_call(MXDRV_STOP);
 
     /* Free old buffer if it exists */
@@ -145,12 +146,8 @@ int play_track(int track_num) {
         return -1;
     }
 
-    /* Step 3: Call CONT to start/unpause the music */
-    printf("Calling MXDRV CONT to start playback...\r\n");
-    result = mxdrv_call(MXDRV_CONT);
-    printf("CONT returned: 0x%08X\r\n", result);
-
-    printf("Music should be playing now!\r\n");
+    /* Note: Original outrun.s doesn't call CONT - just PLAY is enough */
+    printf("\r\nMusic should be playing now!\r\n");
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
     /* Buffer will be freed when loading next track or when program exits */
