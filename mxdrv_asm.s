@@ -37,6 +37,19 @@ mxdrv_set_mdx:
 	movem.l	(%sp)+,%d1/%a1	| Restore registers
 	rts			| Return with result in D0
 
+| int mxdrv_set_pdx(const char *filename);
+| Set PDX file path (or NULL if no PDX file)
+| Returns result from SETPDX in D0
+	.global	mxdrv_set_pdx
+	.type	mxdrv_set_pdx,@function
+mxdrv_set_pdx:
+	move.l	%a1,-(%sp)	| Save A1 (4 bytes)
+	move.l	8(%sp),%a1	| A1 = filename pointer (4+4=8)
+	move.l	#3,%d0		| D0 = SETPDX function
+	trap	#4		| Set PDX file path
+	move.l	(%sp)+,%a1	| Restore A1
+	rts			| Return with result in D0
+
 | void mxdrv_play(void *data);
 | Load and play MDX data using MXDRV
 | Calls SETMDX (func=2) then PLAY (func=4)

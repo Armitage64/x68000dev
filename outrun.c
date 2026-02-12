@@ -44,6 +44,7 @@ Track tracks[] = {
 /* MXDRV interface - implemented in mxdrv_asm.s */
 extern int mxdrv_call(int func);
 extern int mxdrv_set_mdx(void *data, int size);
+extern int mxdrv_set_pdx(const char *filename);
 extern void mxdrv_play(void *data);
 
 /* DOS functions - defined later in this file */
@@ -141,6 +142,23 @@ int play_track(int track_num) {
         printf("ERROR: Failed to load MDX data (error %d)\r\n", result);
         free(buffer);
         return -1;
+    }
+
+    /* Try to set PDX file (PCM samples) */
+    /* Build PDX filename by replacing .MDX with .PDX */
+    {
+        char pdx_filename[256];
+        strcpy(pdx_filename, track->filename);
+        strcpy(pdx_filename + strlen(pdx_filename) - 4, ".PDX");
+
+        printf("DEBUG: Setting PDX file to %s\r\n", pdx_filename);
+        fflush(stdout);
+
+        result = mxdrv_set_pdx(pdx_filename);
+        printf("DEBUG: SETPDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
+        fflush(stdout);
+
+        /* PDX is optional, so don't fail if it's not found */
     }
 
     /* Start playback */
