@@ -124,29 +124,16 @@ int play_track(int track_num) {
 
     /* Note: Skipping work area check - function 0 is FREE, not get_work_area */
 
-    /* Step 1: Load MDX data with SETMDX */
-    printf("Calling MXDRV SETMDX (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
-    result = mxdrv_setmdx(mdx_buffer);
-    printf("SETMDX returned: 0x%08X\r\n", result);
-
-    if (result != 0) {
-        printf("ERROR: SETMDX failed with code 0x%08X\r\n", result);
-        return -1;
-    }
-
-    /* SETMDX successful - MDX data is now loaded */
-
-    /* Step 2: Start playback with PLAY (pass MDX pointer again!) */
-    printf("Calling MXDRV PLAY (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
-    result = mxdrv_play_only(mdx_buffer);
-    printf("PLAY returned: 0x%08X\r\n", result);
+    /* Use combined mxdrv_play() - does SETMDX + PLAY atomically */
+    printf("Calling MXDRV combined SETMDX+PLAY (buffer=0x%08lX)...\r\n", (unsigned long)mdx_buffer);
+    result = mxdrv_play(mdx_buffer);
+    printf("Combined PLAY returned: 0x%08X\r\n", result);
 
     if (result != 0) {
         printf("ERROR: PLAY failed with code 0x%08X\r\n", result);
         return -1;
     }
 
-    /* Note: Original outrun.s doesn't call CONT - just PLAY is enough */
     printf("\r\nMusic should be playing now!\r\n");
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
