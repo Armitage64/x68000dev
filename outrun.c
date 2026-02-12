@@ -46,7 +46,6 @@ extern int mxdrv_call(int func);
 extern int mxdrv_set_mdx(void *data, int size);
 extern int mxdrv_set_pdx(const char *filename);
 extern void mxdrv_play(void *data);
-extern void mxdrv_int(void);  /* Interrupt handler - must be called periodically */
 
 /* DOS functions - defined later in this file */
 int dos_inkey(void);
@@ -262,25 +261,16 @@ int main(void) {
 
     /* Main loop */
     print_menu();
-    printf("DEBUG: Entering main loop, press a key...\r\n");
-    fflush(stdout);
 
     while (running) {
-        int i;
         int key_status;
 
         /* Check if a key is available (non-blocking) */
         key_status = dos_keysns();
 
         if (key_status != 0) {
-            printf("DEBUG: dos_keysns() returned %d (0x%04x)\r\n", key_status, key_status & 0xFFFF);
-            fflush(stdout);
-
             /* Read the character */
             ch = dos_inkey();
-            printf("DEBUG: dos_inkey() returned '%c' (%d / 0x%02x)\r\n",
-                   ch >= 32 && ch < 127 ? ch : '?', ch, ch);
-            fflush(stdout);
 
             /* Process input */
             switch (toupper(ch)) {
@@ -311,12 +301,9 @@ int main(void) {
             }
         }
 
-        /* Call MXDRV interrupt handler periodically to advance music playback */
-        /* Call it multiple times per loop iteration for smoother playback */
-        for (i = 0; i < 5; i++) {
-            mxdrv_int();
-            delay_short();
-        }
+        /* Small delay to avoid consuming 100% CPU */
+        /* MXDRV handles music playback via its own timer interrupt */
+        delay_short();
     }
 
     /* Cleanup - stop music but don't unload MXDRV (we didn't load it) */
