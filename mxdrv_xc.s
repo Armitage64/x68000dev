@@ -20,6 +20,14 @@
 _mxdrv_call:
 	movem.l	d1-d7/a0-a6,-(sp)	; Save all registers except D0
 	move.l	60(sp),d0		; Get function number in D0 (4 + 56 bytes saved = 60)
+
+	* Clear all parameter registers (MXDRV might expect this)
+	moveq	#0,d1
+	moveq	#0,d2
+	suba.l	a0,a0
+	suba.l	a1,a1
+	suba.l	a2,a2
+
 	trap	#4			; Call MXDRV
 	movem.l	(sp)+,d1-d7/a0-a6	; Restore all registers
 	rts				; Return with result in D0
