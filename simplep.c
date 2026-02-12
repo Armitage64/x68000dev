@@ -15,12 +15,17 @@ extern int mxdrvcall(int func);
 
 #define MDX_MAX_SIZE 65536
 
-int main(int argc, char *argv[]) {
+int main(argc, argv)
+int argc;
+char *argv[];
+{
     void *mdx_data;
     int result;
-    const char *filename = "LAST.MDX";
+    char *filename;
     FILE *fp;
     long file_size;
+
+    filename = "LAST.MDX";
 
     printf("Simple MDX Player\r\n");
     printf("=================\r\n\r\n");
@@ -100,7 +105,7 @@ int main(int argc, char *argv[]) {
 
     /* Stop playback (function 5) */
     printf("\r\nStopping playback...\r\n");
-    mxdrvcall(5);  /* STOP function */
+    mxdrvcall(5);
 
     free(mdx_data);
     printf("Done.\r\n");
