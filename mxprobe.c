@@ -13,8 +13,12 @@ int main(void) {
     printf("MXDRV30.X Function Probe\r\n");
     printf("========================\r\n\r\n");
 
-    /* Try functions 0-10 */
+    /* Try functions 0, 2-10 (skip 1 - it causes errors) */
     for (i = 0; i <= 10; i++) {
+        if (i == 1) {
+            printf("Function %2d: (skipped - causes error)\r\n", i);
+            continue;
+        }
         printf("Function %2d: ", i);
         result = mxdrv_call(i);
         printf("0x%08lx (%ld)\r\n", (unsigned long)result, (long)result);
