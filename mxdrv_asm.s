@@ -3,67 +3,36 @@
 | ============================================================================
 | MXDRV calling convention for X68000:
 |   - trap #10 (MXDRV music driver trap)
-|   - D0 = function number
-|   - D1, A1, A2 = parameters (depending on function)
-|   - Parameters passed in REGISTERS, not on stack
-|   - All registers preserved except D0 (return value)
+|   - Function number pushed on STACK (word), not in registers
+|   - Additional parameters pushed on stack before function number
+|   - Stack must be cleaned up after trap (addq)
+|   - Return value in D0
 | ============================================================================
 
 	.text
 	.even
 
 | int mxdrv_call(int func);
-| Call MXDRV with function number in D0
+| Call MXDRV with function number on stack
 | Returns result in D0
-| Save ALL registers except D0 (just to be safe)
 	.global	mxdrv_call
 	.type	mxdrv_call,@function
 mxdrv_call:
-	movem.l	%d1-%d7/%a0-%a6,-(%sp)	| Save all registers except D0
-	move.l	60(%sp),%d0	| Get function number in D0 (4 + 56 bytes saved = 60)
-	trap	#10		| Call MXDRV (trap #10 for X68000 MXDRV)
-	movem.l	(%sp)+,%d1-%d7/%a0-%a6	| Restore all registers
-	rts			| Return with result in D0
-
-| int mxdrv_set_mdx(void *data, int size);
-| Load MDX data into MXDRV
-| Returns result from SETMDX in D0
-	.global	mxdrv_set_mdx
-	.type	mxdrv_set_mdx,@function
-mxdrv_set_mdx:
-	movem.l	%d1/%a1,-(%sp)	| Save registers (8 bytes)
-	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
-	move.l	16(%sp),%d1	| D1 = size (4+8+4=16)
-	move.l	#2,%d0		| D0 = SETMDX function
-	trap	#10		| Load MDX data into MXDRV
-	movem.l	(%sp)+,%d1/%a1	| Restore registers
-	rts			| Return with result in D0
-
-| int mxdrv_set_pdx(const char *filename);
-| Set PDX file path (or NULL if no PDX file)
-| Returns result from SETPDX in D0
-	.global	mxdrv_set_pdx
-	.type	mxdrv_set_pdx,@function
-mxdrv_set_pdx:
-	move.l	%a1,-(%sp)	| Save A1 (4 bytes)
-	move.l	8(%sp),%a1	| A1 = filename pointer (4+4=8)
-	move.l	#3,%d0		| D0 = SETPDX function
-	trap	#10		| Set PDX file path
-	move.l	(%sp)+,%a1	| Restore A1
+	move.l	4(%sp),%d0	| Get function number from argument (4 bytes = return addr)
+	move.w	%d0,-(%sp)	| Push function number on stack (word)
+	trap	#10		| Call MXDRV
+	addq.l	#2,%sp		| Clean up stack (2 bytes)
 	rts			| Return with result in D0
 
 | void mxdrv_play(void *data);
-| Load and play MDX data using MXDRV
-| Calls SETMDX (func=2) then PLAY (func=4)
+| Play MDX data using MXDRV
+| Pushes MDX pointer and PLAY function on stack, calls trap #10
 	.global	mxdrv_play
 	.type	mxdrv_play,@function
 mxdrv_play:
-	movem.l	%d1/%a1,-(%sp)	| Save registers (8 bytes)
-	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
-	move.l	#65536,%d1	| D1 = max size (64K)
-	move.l	#2,%d0		| D0 = SETMDX function
-	trap	#10		| Load MDX data into MXDRV
-	move.l	#4,%d0		| D0 = PLAY function
-	trap	#10		| Start playback
-	movem.l	(%sp)+,%d1/%a1	| Restore registers
+	move.l	4(%sp),%a0	| Get MDX data pointer from argument
+	move.l	%a0,-(%sp)	| Push MDX pointer on stack (4 bytes)
+	move.w	#3,-(%sp)	| Push MXDRV_PLAY function 0x03 (2 bytes)
+	trap	#10		| Call MXDRV
+	addq.l	#6,%sp		| Clean up stack (6 bytes total)
 	rts			| Return
