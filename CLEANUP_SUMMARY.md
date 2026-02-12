@@ -24,29 +24,45 @@ The non-blocking `dos_keysns()` approach caused infinite menu redraws because th
 
 **Commit:** a310fc6 "Fix infinite menu redraw by reverting to blocking input"
 
-### 3. **CRITICAL: Fixed Wrong Trap Number for MXDRV** ✅
+### 3. **CRITICAL: Fixed MXDRV Trap Number and Calling Convention** ✅
 **THIS WAS THE MUSIC PLAYBACK BUG!**
 
-The code was using `trap #4` (from mdxtools) but X68000 MXDRV uses `trap #10`.
+The code had TWO major bugs:
+1. Wrong trap number: using `trap #4` (from mdxtools) instead of `trap #10`
+2. **Wrong calling convention**: using REGISTER-based (D0) instead of STACK-based parameters
 
-**Evidence:**
-- BUILD_NOTES.md: "Uses trap #10 for all MXDRV functions"
-- FIXES.md: "Changed to trap #10 - this is the correct trap"
-- outrun.s: All original MXDRV calls use `trap #10`
+**The Problem:**
+- First fix: Changed trap #4 → trap #10 but kept register-based calling → **INSTANT REBOOT**
+- Root cause: X68000 MXDRV uses **STACK-BASED** parameters, not registers!
 
-**Changed:** All `trap #4` → `trap #10` in mxdrv_asm.s:
-- `mxdrv_call()`
-- `mxdrv_set_mdx()`
-- `mxdrv_set_pdx()`
-- `mxdrv_play()`
+**Evidence from outrun.s:**
+```asm
+move.l  a5,-(sp)              ; Push MDX pointer (4 bytes)
+move.w  #MXDRV_PLAY,-(sp)     ; Push function 0x03 (2 bytes)
+trap    #10                    ; Call MXDRV
+addq.l  #6,sp                 ; Clean up 6 bytes
+```
 
-**Commit:** ccc9069 "CRITICAL FIX: Change trap #4 to trap #10 for MXDRV"
+**Final Fix:**
+- ✅ trap #10 (correct)
+- ✅ STACK-based calling (push function number on stack)
+- ✅ Correct function numbers from outrun.s:
+  - MXDRV_STAT = 0x02 (was using 0x12)
+  - MXDRV_PLAY = 0x03 (was using 0x04)
+  - MXDRV_STOP = 0x04 (was using 0x05)
+- ✅ Removed unused mxdrv_set_mdx/mxdrv_set_pdx functions
+
+**Commits:**
+- ccc9069 "Change trap #4 to trap #10" (caused reboots)
+- 5e5c5df "Fix MXDRV calling convention: use STACK-based parameters" (REAL FIX)
 
 ## What's Fixed
 
 ✅ Code is clean and production-ready
 ✅ Infinite menu redraw issue resolved
 ✅ Correct trap number for MXDRV (trap #10)
+✅ Correct STACK-BASED calling convention
+✅ Correct function numbers matching original assembly
 ✅ All unnecessary debug code removed
 
 ## Next Steps
