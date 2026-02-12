@@ -18,26 +18,41 @@ mxprobe.c   - MXDRV function probe tool
 mxdrvxc.s   - Assembly wrappers (Motorola syntax for XC)
 
 -------------------------------------------------------------------------------
-COMPILING WITH XC
+COMPILING WITH XC (3-STEP PROCESS)
 -------------------------------------------------------------------------------
+
+IMPORTANT: XC cannot assemble .s files directly!
+You must use the separate assembler (as) first.
 
 For the SIMPLE PLAYER:
 ---------------------
 
-    xc simplep.c mxdrvxc.s
+Step 1: Assemble the MXDRV wrapper
+    as -u mxdrvxc.s
 
-This creates SIMPLEP.R - run it with:
+Step 2: Compile the C file
+    xc -c simplep.c
 
+Step 3: Link everything together
+    ln -o simplep.x simplep.o mxdrvxc.o
+
+Then run:
     simplep LAST
 
 
 For the PROBE TOOL:
 -------------------
 
-    xc mxprobe.c mxdrvxc.s
+Step 1: Assemble the MXDRV wrapper (if not done already)
+    as -u mxdrvxc.s
 
-This creates MXPROBE.R - run it with:
+Step 2: Compile the C file
+    xc -c mxprobe.c
 
+Step 3: Link everything together
+    ln -o mxprobe.x mxprobe.o mxdrvxc.o
+
+Then run:
     mxprobe
 
 
