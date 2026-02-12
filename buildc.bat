@@ -1,9 +1,10 @@
 @echo off
 REM ============================================================================
-REM Build script for Out Run Music Player - C Version (Windows)
+REM Build script for MDX Player - C Version (Windows cross-compile)
+REM NO UNDERSCORES - X68000 keyboard compatible
 REM ============================================================================
 
-echo Building Out Run Music Player (C version)...
+echo Building MDX Player (C version)...
 
 REM Set paths to tools
 set GCC=human68k-gcc.exe
@@ -13,9 +14,16 @@ REM Check if compiler is available
 where %GCC% >nul 2>&1
 if errorlevel 1 (
     echo ERROR: %GCC% not found in PATH
-    echo Please install the Human68k cross-compiler toolchain
     echo.
-    echo Toolchain can be built from: https://github.com/Lydux/gcc-4.6.2-human68k
+    echo This script is for Windows cross-compilation with human68k-gcc.
+    echo.
+    echo If you are on the X68000, use these commands instead:
+    echo   as -u mxdrvxc.s
+    echo   xc -c simplep.c
+    echo   ln -o simplep.x simplep.o mxdrvxc.o
+    echo.
+    echo For cross-compilation, install from:
+    echo   https://github.com/Lydux/gcc-4.6.2-human68k
     exit /b 1
 )
 
@@ -28,16 +36,16 @@ if errorlevel 1 (
 )
 
 REM Compile and link the C source and assembly wrapper
-echo Compiling C source...
-%GCC% -m68000 -O2 -Wall -c -o outrun.o outrun.c
+echo Compiling C source (simplep.c)...
+%GCC% -m68000 -O2 -Wall -c -o simplep.o simplep.c
 
 if errorlevel 1 (
     echo ERROR: C compilation failed!
     exit /b 1
 )
 
-echo Assembling MXDRV wrapper...
-%GCC% -m68000 -c -o mxdrv_asm.o mxdrv_asm.s
+echo Assembling MXDRV wrapper (mxdrvasm.s - GCC syntax)...
+%GCC% -m68000 -c -o mxdrvasm.o mxdrvasm.s
 
 if errorlevel 1 (
     echo ERROR: Assembly failed!
@@ -45,16 +53,16 @@ if errorlevel 1 (
 )
 
 echo Linking...
-%GCC% -m68000 -o outrunc.elf outrun.o mxdrv_asm.o -ldos -liocs
+%GCC% -m68000 -o simplep.elf simplep.o mxdrvasm.o -ldos -liocs
 
 if errorlevel 1 (
-    echo ERROR: Compilation failed!
+    echo ERROR: Linking failed!
     exit /b 1
 )
 
 REM Convert to X68000 .X format
 echo Converting to X68000 format...
-%OBJCOPY% -O xfile outrunc.elf outrunc.x
+%OBJCOPY% -O xfile simplep.elf simplep.x
 
 if errorlevel 1 (
     echo ERROR: Conversion to X68000 format failed!
@@ -62,15 +70,21 @@ if errorlevel 1 (
 )
 
 REM Clean up intermediate files
-if exist outrunc.elf del outrunc.elf
-if exist outrun.o del outrun.o
-if exist mxdrv_asm.o del mxdrv_asm.o
+if exist simplep.elf del simplep.elf
+if exist simplep.o del simplep.o
+if exist mxdrvasm.o del mxdrvasm.o
 
-echo Build successful! Output: outrunc.x
+echo.
+echo ============================================================================
+echo Build successful! Output: simplep.x
+echo ============================================================================
 echo.
 echo To run in MAME:
-echo   C:\dev\mame\mame.exe x68000 -ramsize 4M -flop1 outrunc.x
+echo   mame.exe x68000 -ramsize 4M -flop1 simplep.x
 echo.
-echo Make sure MXDRV.X and the .MDX files are in the same directory!
+echo Make sure MXDRV30.X and LAST.MDX are in the same directory!
+echo.
+echo Files use NO UNDERSCORES for X68000 keyboard compatibility.
+echo ============================================================================
 
 exit /b 0
