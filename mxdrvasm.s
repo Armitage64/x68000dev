@@ -102,3 +102,19 @@ mxdrv_get_work_area:
 	.type	mxdrv_get_work_ptr,@function
 mxdrv_get_work_ptr:
 	bra	mxdrv_get_work_area	| Jump to main function
+
+| ============================================================================
+| Compatibility aliases for mxprobe.c (no underscores)
+| ============================================================================
+
+| int mxdrvcall(int func) - alias for mxdrv_call
+	.global	mxdrvcall
+	.type	mxdrvcall,@function
+mxdrvcall:
+	bra	mxdrv_call
+
+| void* mxdrvwork(void) - alias for mxdrv_get_work_area
+	.global	mxdrvwork
+	.type	mxdrvwork,@function
+mxdrvwork:
+	bra	mxdrv_get_work_area
