@@ -43,7 +43,7 @@ mxdrv_setmdx:
 
 | int mxdrv_play_only(void);
 | Start playback using MXDRV PLAY function
-| Trying both function 4 (L_PLAY, clears mask) and function 5 (L_PlayWithMask, uses D1)
+| Function 4 = L_PLAY, Function 15 (0x0F) = L_PlayWithMask
 | MUST call mxdrv_setmdx first!
 | Returns D0 (error code or 0 if success)
 	.global	mxdrv_play_only
@@ -51,7 +51,7 @@ mxdrv_setmdx:
 mxdrv_play_only:
 	movem.l	%d1,-(%sp)	| Save D1
 	move.w	#0xFFFF,%d1	| D1 = all channels
-	move.l	#5,%d0		| D0 = PlayWithMask function (TRY 5 INSTEAD OF 4!)
+	move.l	#0x0F,%d0	| D0 = 15 (L_PlayWithMask) - uses D1 channel mask
 	trap	#4		| Call MXDRV
 	movem.l	(%sp)+,%d1	| Restore D1
 	rts			| Return with result in D0
