@@ -11,15 +11,15 @@
 #include <string.h>
 #include <ctype.h>
 
-/* MXDRV function numbers - trap #4 calling convention (from x68kd11s) */
-#define MXDRV_FREE          0x00  /* Free/check MXDRV */
-#define MXDRV_ERROR         0x01  /* Error handler */
-#define MXDRV_SETMDX        0x02  /* Load MDX data */
-#define MXDRV_SETPDX        0x03  /* Load PDX data */
-#define MXDRV_PLAY          0x04  /* Start playback */
-#define MXDRV_STOP          0x05  /* Stop playback */
-#define MXDRV_PAUSE         0x06  /* Pause */
-#define MXDRV_CONT          0x07  /* Continue */
+/* MXDRV function numbers - trap #4 calling convention (from outrun.s) */
+#define MXDRV_START         0x00  /* Initialize MXDRV */
+#define MXDRV_END           0x01  /* Terminate MXDRV */
+#define MXDRV_STAT          0x02  /* Get status */
+#define MXDRV_PLAY          0x03  /* Start playback - CORRECT! */
+#define MXDRV_STOP          0x04  /* Stop playback - CORRECT! */
+#define MXDRV_PAUSE         0x05  /* Pause */
+#define MXDRV_CONT          0x06  /* Continue */
+#define MXDRV_FADEOUT       0x07  /* Fade out */
 
 /* Human68k DOS call numbers */
 #define DOS_EXEC   0x4b
