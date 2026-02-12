@@ -1,0 +1,85 @@
+===============================================================================
+X68000 MDX Player - XC Compiler Instructions
+===============================================================================
+
+You have: X68K XC Compiler v2.11 (SHARP/Hudson)
+
+** NO UNDERSCORES - X68000 keyboard compatible **
+
+All filenames and functions use NO underscores since the X68000 keyboard
+doesn't have an underscore key!
+
+-------------------------------------------------------------------------------
+FILES (No underscores!)
+-------------------------------------------------------------------------------
+
+simplep.c   - Simple MDX player (C source)
+mxprobe.c   - MXDRV function probe tool
+mxdrvxc.s   - Assembly wrappers (Motorola syntax for XC)
+
+-------------------------------------------------------------------------------
+COMPILING WITH XC
+-------------------------------------------------------------------------------
+
+For the SIMPLE PLAYER:
+---------------------
+
+    xc simplep.c mxdrvxc.s
+
+This creates SIMPLEP.R - run it with:
+
+    simplep LAST
+
+
+For the PROBE TOOL:
+-------------------
+
+    xc mxprobe.c mxdrvxc.s
+
+This creates MXPROBE.R - run it with:
+
+    mxprobe
+
+
+-------------------------------------------------------------------------------
+RUNNING THE PROGRAMS
+-------------------------------------------------------------------------------
+
+1. Make sure MXDRV30.X is loaded:
+   mxdrv30
+
+2. Run the simple player (will play LAST.MDX by default):
+   simplep LAST
+
+   Or specify a different MDX file:
+   simplep FILENAME
+
+3. Or run the probe tool to test MXDRV:
+   mxprobe
+
+
+-------------------------------------------------------------------------------
+COMMON XC FLAGS
+-------------------------------------------------------------------------------
+
+-c          Compile only (don't link)
+-o <file>   Output file name
+-O          Optimize code
+-g          Include debug symbols
+-w          Suppress warnings
+
+-------------------------------------------------------------------------------
+TROUBLESHOOTING
+-------------------------------------------------------------------------------
+
+If you get errors about MXDRV:
+  - Make sure MXDRV30.X is loaded: run "mxdrv30" first
+  - Try rebooting and reloading MXDRV if it gets into a bad state
+  - Check that LAST.MDX exists in the current directory
+
+If you get assembly errors:
+  - Make sure you're using mxdrvxc.s (not mxdrvasm.s)
+  - mxdrvxc.s is Motorola syntax for XC
+  - mxdrvasm.s is GCC syntax (won't work with XC)
+
+===============================================================================

@@ -1,11 +1,12 @@
 /*
  * MXDRV30.X Function Probe
  * Test multiple MXDRV functions to see what works
+ * Filename: mxprobe.c (no underscores for X68000 keyboard)
  */
 #include <stdio.h>
 
-extern int mxdrv_call(int func);
-extern int mxdrv_get_work_ptr(void);
+extern int mxdrvcall(int func);
+extern int mxdrvwork(void);
 
 int main(void) {
     int i, result;
@@ -20,12 +21,12 @@ int main(void) {
             continue;
         }
         printf("Function %2d: ", i);
-        result = mxdrv_call(i);
+        result = mxdrvcall(i);
         printf("0x%08lx (%ld)\r\n", (unsigned long)result, (long)result);
     }
 
-    printf("\r\nTrying mxdrv_get_work_ptr()...\r\n");
-    result = mxdrv_get_work_ptr();
+    printf("\r\nTrying mxdrvwork()...\r\n");
+    result = mxdrvwork();
     printf("Work ptr: 0x%08lx\r\n", (unsigned long)result);
 
     return 0;

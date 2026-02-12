@@ -1,6 +1,7 @@
 /*
  * Simple MDX Player - No work area check
  * Just try to load and play LAST.MDX directly
+ * Filename: simplep.c (no underscores for X68000 keyboard)
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,9 +9,9 @@
 #include <iocslib.h>
 #include <doslib.h>
 
-extern int mxdrv_setmdx(void *data);
-extern int mxdrv_play_only(void);
-extern int mxdrv_call(int func);
+extern int mxdrvset(void *data);
+extern int mxdrvplay(void);
+extern int mxdrvcall(int func);
 
 #define MDX_MAX_SIZE 65536
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
 
     /* Step 1: Load MDX with SETMDX (function 2) */
     printf("Calling MXDRV SETMDX...\r\n");
-    result = mxdrv_setmdx(mdx_data);
+    result = mxdrvset(mdx_data);
     printf("SETMDX result: %d (0x%08x)\r\n", result, result);
 
     if (result < 0) {
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     /* Step 2: Start playback with PLAY (function 4) */
     printf("\r\nCalling MXDRV PLAY...\r\n");
-    result = mxdrv_play_only();
+    result = mxdrvplay();
     printf("PLAY result: %d (0x%08x)\r\n", result, result);
 
     if (result < 0) {
@@ -99,7 +100,7 @@ int main(int argc, char *argv[]) {
 
     /* Stop playback (function 5) */
     printf("\r\nStopping playback...\r\n");
-    mxdrv_call(5);  /* STOP function */
+    mxdrvcall(5);  /* STOP function */
 
     free(mdx_data);
     printf("Done.\r\n");
