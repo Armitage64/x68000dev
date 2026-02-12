@@ -70,14 +70,14 @@ _mxdrv_play:
 	move.l	#2,d0			; D0 = SETMDX function
 	trap	#4			; Call MXDRV SETMDX
 	tst.l	d0			; Check return value
-	bne	.play_error		; If error, return immediately
+	bne	play_error		; If error, return immediately
 
 	* Step 2: Call PLAY to start playback (takes no parameters!)
 	move.w	#$FFFF,d1		; D1 = channel mask (all channels)
 	move.l	#4,d0			; D0 = PLAY function
 	trap	#4			; Call MXDRV PLAY
 
-.play_error:
+play_error:
 	movem.l	(sp)+,d1/a1-a2		; Restore registers
 	rts				; Return with result in D0
 
