@@ -19,7 +19,7 @@ if errorlevel 1 (
     echo.
     echo If you are on the X68000, use these commands instead:
     echo   as -u mxdrvxc.s
-    echo   xc -c simplep.c
+    echo   cc -c simplep.c
     echo   ln -o simplep.x simplep.o mxdrvxc.o
     echo.
     echo For cross-compilation, install from:

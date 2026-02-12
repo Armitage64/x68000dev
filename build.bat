@@ -30,20 +30,20 @@ if exist "%VASM%" (
 )
 
 REM ============================================================================
-REM For X68000 native compilation with XC:
+REM For X68000 native compilation with CC:
 REM ============================================================================
 
 echo.
-echo For X68000 XC compiler, use these commands:
+echo For X68000 CC compiler (cc.x), use these commands:
 echo.
 echo   1. Simple MDX Player:
 echo      as -u mxdrvxc.s
-echo      xc -c simplep.c
+echo      cc -c simplep.c
 echo      ln -o simplep.x simplep.o mxdrvxc.o
 echo.
 echo   2. Probe tool:
 echo      as -u mxdrvxc.s
-echo      xc -c mxprobe.c
+echo      cc -c mxprobe.c
 echo      ln -o mxprobe.x mxprobe.o mxdrvxc.o
 echo.
 echo Files use NO UNDERSCORES for X68000 keyboard compatibility.
