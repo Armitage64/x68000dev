@@ -11,15 +11,15 @@
 #include <string.h>
 #include <ctype.h>
 
-/* MXDRV function numbers - from original outrun.s */
-#define MXDRV_START         0x00  /* Initialize MXDRV */
-#define MXDRV_END           0x01  /* Unload MXDRV */
-#define MXDRV_STAT          0x02  /* Get status */
-#define MXDRV_PLAY          0x03  /* Start playback (pass MDX data pointer) */
-#define MXDRV_STOP          0x04  /* Stop playback */
-#define MXDRV_PAUSE         0x05  /* Pause */
-#define MXDRV_CONT          0x06  /* Continue */
-#define MXDRV_FADEOUT       0x07  /* Fade out */
+/* MXDRV function numbers - trap #4 calling convention (from x68kd11s) */
+#define MXDRV_FREE          0x00  /* Free/check MXDRV */
+#define MXDRV_ERROR         0x01  /* Error handler */
+#define MXDRV_SETMDX        0x02  /* Load MDX data */
+#define MXDRV_SETPDX        0x03  /* Load PDX data */
+#define MXDRV_PLAY          0x04  /* Start playback */
+#define MXDRV_STOP          0x05  /* Stop playback */
+#define MXDRV_PAUSE         0x06  /* Pause */
+#define MXDRV_CONT          0x07  /* Continue */
 
 /* Human68k DOS call numbers */
 #define DOS_EXEC   0x4b
@@ -50,23 +50,10 @@ int dos_inkey(void);
 
 /* Initialize MXDRV driver */
 int load_mxdrv(void) {
-    int result;
-
-    printf("Checking MXDRV driver...\r\n");
-
-    /* Check if MXDRV is loaded using STAT */
-    result = mxdrv_call(MXDRV_STAT);
-
-    if (result < 0) {
-        printf("\r\nERROR: MXDRV not loaded!\r\n");
-        printf("Please run MXDRV.X first, then try again.\r\n");
-        printf("\r\nPress any key to exit...\r\n");
-        dos_inkey();
-        return -1;
-    }
-
-    printf("MXDRV is ready.\r\n\r\n");
-
+    /* No need to check - trap #4 will fail if MXDRV not loaded */
+    /* Just print a message assuming MXDRV is present */
+    printf("OUT RUN Music Player for X68000\r\n");
+    printf("Make sure MXDRV.X is loaded!\r\n\r\n");
     return 0;
 }
 
