@@ -88,6 +88,7 @@ int load_mxdrv(void) {
 int play_track(int track_num) {
     FILE *fp;
     static void *mdx_buffer = NULL;  /* Static buffer that persists - MXDRV keeps pointer to it! */
+    static void *mdx_buffer_orig = NULL;  /* Original malloc pointer for free() */
     size_t bytes_read;
     int result;
     Track *track;
@@ -102,9 +103,10 @@ int play_track(int track_num) {
     /* Stop current music first */
     mxdrv_call(MXDRV_STOP);
 
-    /* Free old buffer if it exists */
-    if (mdx_buffer) {
-        free(mdx_buffer);
+    /* Free old buffer if it exists (use original pointer!) */
+    if (mdx_buffer_orig) {
+        free(mdx_buffer_orig);
+        mdx_buffer_orig = NULL;
         mdx_buffer = NULL;
     }
 
@@ -120,12 +122,24 @@ int play_track(int track_num) {
     }
 
     /* Allocate 64KB buffer for MDX data */
-    mdx_buffer = malloc(65536);
-    if (!mdx_buffer) {
+    /* Add 1 extra byte to ensure we can align to even address */
+    mdx_buffer_orig = malloc(65536 + 1);
+    if (!mdx_buffer_orig) {
         printf("\r\nERROR: Could not allocate memory!\r\n");
         fclose(fp);
         return -1;
     }
+
+    /* Ensure buffer is aligned to even address (required by 68000) */
+    mdx_buffer = mdx_buffer_orig;
+    if ((unsigned long)mdx_buffer & 1) {
+        mdx_buffer = (void *)((unsigned long)mdx_buffer + 1);
+        printf("DEBUG: Aligned buffer from 0x%08lx to 0x%08lx\r\n",
+               (unsigned long)mdx_buffer_orig, (unsigned long)mdx_buffer);
+    } else {
+        printf("DEBUG: Buffer already aligned at 0x%08lx\r\n", (unsigned long)mdx_buffer);
+    }
+    fflush(stdout);
 
     /* Read file into buffer */
     bytes_read = fread(mdx_buffer, 1, 65536, fp);
@@ -133,7 +147,8 @@ int play_track(int track_num) {
 
     if (bytes_read == 0) {
         printf("\r\nERROR: Could not read file data!\r\n");
-        free(mdx_buffer);
+        free(mdx_buffer_orig);
+        mdx_buffer_orig = NULL;
         mdx_buffer = NULL;
         return -1;
     }
@@ -148,7 +163,8 @@ int play_track(int track_num) {
 
     if (result < 0) {
         printf("ERROR: Failed to load MDX data (error %d)\r\n", result);
-        free(mdx_buffer);
+        free(mdx_buffer_orig);
+        mdx_buffer_orig = NULL;
         mdx_buffer = NULL;
         return -1;
     }
