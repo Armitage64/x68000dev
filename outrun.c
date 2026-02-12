@@ -129,6 +129,11 @@ int play_track(int track_num) {
         return -1;
     }
 
+    /* Step 3: Call CONT to start/unpause the music */
+    printf("Calling MXDRV CONT to start playback...\r\n");
+    result = mxdrv_call(MXDRV_CONT);
+    printf("CONT returned: 0x%08X\r\n", result);
+
     printf("Music should be playing now!\r\n");
 
     /* DON'T free buffer - MXDRV keeps a pointer to it and uses it during playback! */
