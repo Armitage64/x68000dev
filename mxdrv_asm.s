@@ -23,6 +23,20 @@ mxdrv_call:
 	trap	#4		| Call MXDRV (trap #4 for music drivers)
 	rts			| Return with result in D0
 
+| int mxdrv_set_mdx(void *data, int size);
+| Load MDX data into MXDRV
+| Returns result from SETMDX in D0
+	.global	mxdrv_set_mdx
+	.type	mxdrv_set_mdx,@function
+mxdrv_set_mdx:
+	movem.l	%d1/%a1,-(%sp)	| Save registers (8 bytes)
+	move.l	12(%sp),%a1	| A1 = MDX data pointer (4+8=12)
+	move.l	16(%sp),%d1	| D1 = size (4+8+4=16)
+	move.l	#2,%d0		| D0 = SETMDX function
+	trap	#4		| Load MDX data into MXDRV
+	movem.l	(%sp)+,%d1/%a1	| Restore registers
+	rts			| Return with result in D0
+
 | void mxdrv_play(void *data);
 | Load and play MDX data using MXDRV
 | Calls SETMDX (func=2) then PLAY (func=4)

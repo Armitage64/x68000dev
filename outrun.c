@@ -43,6 +43,7 @@ Track tracks[] = {
 
 /* MXDRV interface - implemented in mxdrv_asm.s */
 extern int mxdrv_call(int func);
+extern int mxdrv_set_mdx(void *data, int size);
 extern void mxdrv_play(void *data);
 
 /* DOS functions - defined later in this file */
@@ -87,6 +88,7 @@ int play_track(int track_num) {
     FILE *fp;
     void *buffer;
     size_t bytes_read;
+    int result;
     Track *track;
 
     if (track_num < 0 || track_num >= 4) {
@@ -127,11 +129,36 @@ int play_track(int track_num) {
         return -1;
     }
 
-    /* Play the MDX data */
-    mxdrv_play(buffer);
+    printf("DEBUG: Read %d bytes from %s\r\n", (int)bytes_read, track->filename);
+    fflush(stdout);
+
+    /* Load MDX data into MXDRV */
+    result = mxdrv_set_mdx(buffer, (int)bytes_read);
+    printf("DEBUG: SETMDX returned %d (0x%04x)\r\n", result, result & 0xFFFF);
+    fflush(stdout);
+
+    if (result < 0) {
+        printf("ERROR: Failed to load MDX data (error %d)\r\n", result);
+        free(buffer);
+        return -1;
+    }
+
+    /* Start playback */
+    result = mxdrv_call(MXDRV_PLAY);
+    printf("DEBUG: PLAY returned %d (0x%04x)\r\n", result, result & 0xFFFF);
+    fflush(stdout);
+
+    if (result < 0) {
+        printf("ERROR: Failed to start playback (error %d)\r\n", result);
+        free(buffer);
+        return -1;
+    }
 
     /* Free buffer */
     free(buffer);
+
+    printf("Playback started successfully!\r\n");
+    fflush(stdout);
 
     return 0;
 }
