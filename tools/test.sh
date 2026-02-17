@@ -12,27 +12,29 @@ if [ ! -f "$BOOT_DISK" ]; then
     exit 1
 fi
 
-# MAME shows an imperfect-emulation warning when launched > warned in cfg.
-# Pre-set warned to a large value so the warning is always suppressed.
-mkdir -p ~/.mame/cfg
-cat > ~/.mame/cfg/x68000.cfg << 'EOF'
-<?xml version="1.0"?>
-<mameconfig version="10">
-    <system name="x68000">
-        <ui_warnings launched="0" warned="9999999999">
-            <feature device="x68000" type="graphics" status="imperfect" />
-        </ui_warnings>
-        <input>
-            <keyboard tag=":keyboard:x68k" enabled="1" />
-        </input>
-    </system>
-</mameconfig>
-EOF
-
 echo "Booting X68000 with disk: $BOOT_DISK"
 echo ""
 
+# Launch MAME in the background
 mame x68000 \
     -flop1 "$BOOT_DISK" \
     -window \
-    -skip_gameinfo
+    -skip_gameinfo &
+MAME_PID=$!
+
+# Wait for MAME window to appear, then move the mouse into it.
+# MAME's warning screen is dismissed by any input event, including mouse movement.
+for i in $(seq 1 30); do
+    sleep 0.5
+    WID=$(xdotool search --pid "$MAME_PID" 2>/dev/null | head -1)
+    if [ -n "$WID" ]; then
+        echo "Found MAME window, dismissing warning..."
+        sleep 0.5
+        xdotool mousemove --window "$WID" 100 100
+        break
+    fi
+done
+
+wait "$MAME_PID"
+echo ""
+echo "Done."
