@@ -1,0 +1,35 @@
+# Build artifacts
+build/
+*.o
+*.elf
+*.bin
+*.map
+*.lst
+
+# X68000 executables
+*.x
+*.X
+
+# ROM files (copyrighted, must not be committed)
+*.rom
+*.ROM
+
+# MAME files
+*.nvram
+*.cfg
+*.sta
+screenshots/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
