@@ -56,14 +56,27 @@ echo "  NOTE: MAME window will open. Do NOT interact with it."
 echo "        The test is fully automated."
 echo ""
 
-# Pre-acknowledge the MAME warning by setting 'warned' to a far-future timestamp.
-# MAME shows the warning when launched > warned. By setting warned >> launched,
-# MAME will see no new warning to show and boot directly.
-CFG_FILE="$HOME/.mame/cfg/x68000.cfg"
+# Pre-acknowledge the MAME warning before each launch. MAME resets 'warned' to the
+# current timestamp at session exit, so we must patch it every run — not just the first.
+# We set warned >> current_time so MAME sees no new warning to display on startup.
+CFG_DIR="$HOME/.mame/cfg"
+CFG_FILE="$CFG_DIR/x68000.cfg"
+mkdir -p "$CFG_DIR"
 if [ -f "$CFG_FILE" ]; then
     sed -i 's/warned="[0-9]*"/warned="9999999999"/' "$CFG_FILE"
-    echo "  Pre-acknowledged MAME warning in cfg"
+else
+    cat > "$CFG_FILE" <<'EOF'
+<?xml version="1.0"?>
+<mameconfig version="10">
+    <system name="x68000">
+        <ui_warnings launched="0" warned="9999999999">
+            <feature device="x68000" type="graphics" status="imperfect" />
+        </ui_warnings>
+    </system>
+</mameconfig>
+EOF
 fi
+echo "  Pre-acknowledged MAME warning in cfg"
 
 # Run MAME in background so we can dismiss the warning screen
 mame x68000 \
@@ -75,15 +88,15 @@ mame x68000 \
     > mame_output.log 2>&1 &
 MAME_PID=$!
 
-# Wait for MAME window to appear, then dismiss the warning screen.
-# Uses dismiss_warning.py which injects input at kernel level via /dev/uinput,
-# bypassing any X11 synthetic event filtering MAME might apply.
-# Also focuses the window first so MAME receives the event.
+# Wait for MAME window to appear, then dismiss the warning screen via XTEST mouse click.
+# MAME's SDL2 backend rejects XSendEvent (triggered when --window is specified on any
+# xdotool command). XTEST mouse events are routed by cursor position, not focus, so we
+# just move the cursor to the window centre and click without any --window argument.
 echo "Waiting for MAME window to dismiss warning..."
 WID=""
 for i in $(seq 1 20); do
     sleep 0.5
-    WID=$(xdotool search --pid "$MAME_PID" 2>/dev/null | head -1)
+    WID=$(xdotool search --pid "$MAME_PID" 2>/dev/null | tail -1)
     if [ -n "$WID" ]; then
         echo "  Found MAME window (attempt $i)"
         break
@@ -95,13 +108,19 @@ if [ -z "$WID" ]; then
     exit 1
 fi
 
-# Wait for the warning screen to render, then dismiss it with a mouse move
+# The cfg patch suppresses the warning on every run. This click is a fallback in case
+# the cfg did not take effect — XTEST mouse events are routed to the window under the
+# cursor (not the focused window), so no focus manipulation is needed. Commands that
+# use --window deliver via XSendEvent, which SDL2 filters.
 echo "  Waiting for warning screen to render..."
 sleep 3.0
 echo "  Dismissing warning screen..."
-xdotool mousemove --window "$WID" 200 200 2>/dev/null || true
+eval "$(xdotool getwindowgeometry --shell "$WID" 2>/dev/null)" || true
+CX=$(( X + WIDTH  / 2 ))
+CY=$(( Y + HEIGHT / 2 ))
+xdotool mousemove "$CX" "$CY" 2>/dev/null || true
 sleep 0.1
-xdotool mousemove --window "$WID" 100 100 2>/dev/null || true
+xdotool click 1 2>/dev/null || true
 
 # Monitor for boot progress: if PC stays in BIOS after 2 minutes, something is wrong
 echo "Waiting for MAME to complete (~70 seconds for boot + test)..."

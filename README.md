@@ -65,8 +65,9 @@ result code suitable for CI pipelines.
 
 ### ✅ MAME Emulation Integration
 
-- **Automated warning dismissal** - dual mouse-move sequence reliably clears the
-  MAME imperfect-emulation warning without requiring manual interaction
+- **Automated warning dismissal** - cfg pre-patch sets `warned` to a far-future
+  value before every launch so MAME never shows the imperfect-emulation warning;
+  a XTEST mouse click provides a fallback in case the cfg is not read
 - **`-nomouse` flag** - prevents host mouse coordinates from reaching the X68000
   analog mouse ports (eliminates spurious input after program exits)
 - **Boot disk support** - programs auto-install to the floppy image via mtools
@@ -142,12 +143,14 @@ make clean
 
 1. `test_gui_automated.sh` backs up `AUTOEXEC.BAT` and installs a test version
    that auto-runs `PROGRAM.X` on boot
-2. MAME's imperfect-emulation warning is pre-acknowledged in `~/.mame/cfg/x68000.cfg`
-   by setting the `warned` timestamp to a far-future value
+2. `~/.mame/cfg/x68000.cfg` is patched to set `warned="9999999999"` so MAME skips
+   the imperfect-emulation warning on startup. MAME resets `warned` to the current
+   timestamp at session exit, so this patch runs before every launch.
 3. MAME launches with `-nomouse` (prevents host mouse from reaching the X68000
    mouse port) and `-script mame/test_hello.lua`
-4. Two synthetic mouse moves (via `xdotool`) dismiss the warning screen reliably,
-   regardless of where the host cursor was previously positioned
+4. As a fallback, `xdotool` moves the cursor to the MAME window centre and sends
+   a XTEST mouse click (no `--window` flag, so SDL2 treats it as real hardware
+   input rather than filtering it as a synthetic XSendEvent)
 5. After 70 real seconds the Lua script checks TVRAM for text output, saves a
    screenshot, prints `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`, and exits MAME
 6. The original `AUTOEXEC.BAT` is restored
@@ -201,13 +204,17 @@ Key points:
 ### MAME Warning Dismissal
 
 MAME shows an "imperfect emulation" warning before booting the X68000. Two
-mechanisms work in tandem to dismiss it:
+mechanisms work in tandem to suppress it:
 
 1. **Config pre-acknowledgement** — sets `warned="9999999999"` in
-   `~/.mame/cfg/x68000.cfg` so MAME believes it has already been shown
-2. **Dual mouse move fallback** — `xdotool mousemove` sends two synthetic
-   `MotionNotify` events to different window coordinates, guaranteeing a motion
-   delta even if the host cursor is already at one of the target positions
+   `~/.mame/cfg/x68000.cfg` before every launch. MAME compares `warned` against
+   the current launch timestamp; because `9999999999` (year 2286) is always
+   greater, no warning is shown. MAME resets `warned` to the real dismissal time
+   at session exit, so the patch must run on every invocation.
+2. **XTEST mouse click fallback** — `xdotool` moves the cursor to the window
+   centre and clicks without the `--window` flag. Omitting `--window` causes
+   xdotool to use `XTestFakeButtonEvent` (XTEST) instead of `XSendEvent`; SDL2
+   accepts XTEST events as real hardware input and silently discards XSendEvent.
 
 `-nomouse` is passed to MAME so the host mouse coordinates injected by
 `xdotool` do not reach the X68000 analog mouse hardware (which would otherwise

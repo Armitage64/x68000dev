@@ -28,7 +28,8 @@ This compiles your code and installs it to the boot disk.
 ./tools/test.sh
 ```
 
-MAME will launch with the boot disk loaded.
+MAME will launch with the boot disk loaded. The imperfect-emulation warning is
+suppressed automatically — no manual dismissal is needed.
 
 ### 3. Execute the Program
 
