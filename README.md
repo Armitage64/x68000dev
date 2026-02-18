@@ -1,17 +1,16 @@
 # X68000 Development Environment
 
-A complete Linux-based development environment for Sharp X68000 software development, featuring automated build, test, and debug workflows.
+A Linux-based development environment for Sharp X68000 software development, featuring automated build, test, and validation workflows.
 
 ## Overview
 
-This repository provides everything needed to develop games and applications for the Sharp X68000 vintage Japanese home computer:
+This repository provides everything needed to develop software for the Sharp X68000 vintage Japanese home computer:
 
-- **Cross-compilation toolchain** - m68k GCC compiler for Motorola 68000 CPU
-- **MAME emulation** - Test your programs with the MAME X68000 emulator
+- **VASM assembler** - vasmm68k_mot for Motorola 68000 assembly
+- **MAME emulation** - Test programs with the MAME X68000 emulator
 - **Automated build system** - Makefile-based workflow
-- **GDB debugging** - Source-level debugging with GDB and MAME
+- **Automated testing** - Lua-based MAME validation with screenshot capture
 - **Comprehensive documentation** - Beginner-friendly guides
-- **Example program** - Graphics test to verify your setup
 
 ## Quick Start
 
@@ -20,6 +19,7 @@ This repository provides everything needed to develop games and applications for
 - Ubuntu 22.04 or later (or compatible Linux)
 - 2GB free disk space
 - X68000 BIOS ROMs (must be obtained legally)
+- `xdotool` for automated warning dismissal (`sudo apt install xdotool`)
 
 ### Installation
 
@@ -28,8 +28,8 @@ This repository provides everything needed to develop games and applications for
 git clone <repository-url> x68000dev
 cd x68000dev
 
-# Install dependencies (already installed in this environment)
-sudo apt install -y gcc-m68k-linux-gnu mame mtools gdb-multiarch
+# Install dependencies
+sudo apt install -y mame mtools xdotool
 
 # Verify X68000 ROMs are installed
 mame -verifyroms x68000
@@ -41,37 +41,44 @@ make all
 ### Test Your Setup
 
 ```bash
-# Run the test program in MAME
+# Interactive: boot MAME with the development disk (manual use)
 make test
+
+# Automated: build, run, validate, and exit (CI-friendly)
+make test-auto
 ```
 
-When MAME boots to the `A>` prompt:
-1. Type: `A:PROGRAM.X`
-2. Press Enter
-3. You should see three colored squares!
+`make test` opens a MAME window. The warning screen is dismissed automatically;
+the X68000 boots to the `A>` prompt where `AUTOEXEC.BAT` runs the program.
+
+`make test-auto` runs the same flow fully unattended and exits with a pass/fail
+result code suitable for CI pipelines.
 
 ## Features
 
-### ✅ Automated Build System
+### ✅ Assembly Build System
 
-- **One-command builds** - `make all` compiles and installs to boot disk
-- **Cross-compilation** - Uses m68k-linux-gnu-gcc for 68000 target
-- **Custom linker script** - Proper Human68k .X executable format
-- **Automatic dependency tracking** - Rebuilds when source changes
+- **One-command builds** - `make all` assembles and links to a Human68k `.X` executable
+- **VASM assembler** - vasmm68k_mot with `-Fxfile` output format
+- **Auto-install** - `make install` copies the binary to the boot disk via mtools
+- **Automatic dependency tracking** - rebuilds when source changes
 
 ### ✅ MAME Emulation Integration
 
-- **Command-line automation** - No GUI manipulation needed
-- **Boot disk support** - Programs auto-install to floppy image
-- **Lua scripting** - Extensible automation framework
-- **Screenshot capture** - Document and test visual output
+- **Automated warning dismissal** - dual mouse-move sequence reliably clears the
+  MAME imperfect-emulation warning without requiring manual interaction
+- **`-nomouse` flag** - prevents host mouse coordinates from reaching the X68000
+  analog mouse ports (eliminates spurious input after program exits)
+- **Boot disk support** - programs auto-install to the floppy image via mtools
+- **Lua scripting** - real-time TVRAM/GVRAM validation with screenshot capture
 
-### ✅ Professional Debugging
+### ✅ Automated Testing
 
-- **GDB integration** - Industry-standard debugging tools
-- **Source-level debugging** - Set breakpoints in C code
-- **Memory inspection** - Examine VRAM, registers, RAM
-- **Single-stepping** - Step through code line-by-line
+- **`test_hello.lua`** - waits 70 real seconds for boot + execution, then scans
+  TVRAM (0xE00000) and GVRAM (0xC00000) for output
+- **Pass/fail exit codes** - `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`
+- **Screenshot on every run** - saves `hello_result.png` via MAME's screen capture
+- **150-second watchdog** - kills MAME if the warning screen was not dismissed
 
 ### ✅ Beginner-Friendly Documentation
 
@@ -80,40 +87,32 @@ When MAME boots to the `A>` prompt:
 - **[Testing Guide](docs/TESTING.md)** - MAME testing workflows
 - **[Debugging Guide](docs/DEBUGGING.md)** - GDB debugging techniques
 - **[X68000 Guide](docs/X68000_GUIDE.md)** - X68000 programming primer
-- **[Graphics API](docs/GRAPHICS_API.md)** - Graphics programming reference
 
 ## Directory Structure
 
 ```
 x68000dev/
-├── src/                    # Source code (C and assembly)
-│   ├── main.c              # Example graphics program
-│   └── start.s             # Human68k startup code
+├── src/                    # Assembly source code
+│   └── hello.s             # Hello World (Human68k DOS calls via F-line)
 ├── include/                # Header files
 ├── assets/                 # Game resources
 │   └── mdx/                # Music files (MDX format)
 ├── build/                  # Build output (gitignored)
-│   ├── obj/                # Object files
 │   └── bin/                # Final executables
-├── tools/                  # Build and utility scripts
-│   ├── build.sh            # Build automation
-│   ├── clean.sh            # Clean build artifacts
-│   ├── install.sh          # Install to boot disk
-│   ├── test.sh             # Run in MAME
-│   └── debug.sh            # Launch GDB debugging
-├── mame/                   # MAME configuration
+│       └── program.x       # Human68k .X executable
+├── mame/                   # MAME configuration and Lua scripts
 │   ├── mame.ini            # MAME settings
-│   ├── autoboot.lua        # Automation script
+│   ├── test_hello.lua      # Automated validation script
+│   ├── test_comprehensive.lua  # Extended memory analysis script
 │   └── debug_session.gdb   # GDB debugging script
+├── tests/                  # Test support files
+│   └── autoexec_test.bat   # AUTOEXEC.BAT installed during test-auto
+├── tools/                  # Build and utility scripts
+│   ├── vasmm68k_mot        # VASM M68k assembler binary
+│   ├── test.sh             # Interactive MAME launcher
+│   └── test_gui_automated.sh  # Fully automated test runner
 ├── docs/                   # Documentation
-│   ├── SETUP.md            # Setup guide
-│   ├── BUILD.md            # Build system guide
-│   ├── TESTING.md          # Testing guide
-│   ├── DEBUGGING.md        # Debugging guide
-│   ├── X68000_GUIDE.md     # X68000 programming primer
-│   └── GRAPHICS_API.md     # Graphics API reference
 ├── Makefile                # Main build file
-├── x68k.ld                 # Linker script
 ├── MasterDisk_V3.xdf       # X68000 boot disk image
 └── README.md               # This file
 ```
@@ -123,104 +122,96 @@ x68000dev/
 ### Build Commands
 
 ```bash
-# Build everything
+# Assemble and link
 make all
+
+# Install binary to boot disk
+make install
+
+# Interactive MAME session
+make test
+
+# Fully automated test (CI-friendly)
+make test-auto
 
 # Clean build artifacts
 make clean
-
-# Build and test
-make test
-
-# Just install to boot disk (no rebuild)
-make install
 ```
 
-### Utility Scripts
+### How the Automated Test Works
 
-```bash
-# Build the program
-./tools/build.sh
-
-# Clean build directory
-./tools/clean.sh
-
-# Install program to boot disk
-./tools/install.sh
-
-# Run in MAME emulator
-./tools/test.sh
-
-# Start GDB debugging session
-./tools/debug.sh
-```
-
-### Debugging Workflow
-
-**Terminal 1:** Start MAME with GDB stub
-
-```bash
-./tools/debug.sh
-```
-
-**Terminal 2:** Connect GDB
-
-```bash
-gdb-multiarch -x mame/debug_session.gdb
-```
-
-**GDB commands:**
-
-```gdb
-(gdb) break main          # Set breakpoint at main
-(gdb) continue            # Run to breakpoint
-(gdb) step                # Step through code
-(gdb) print x             # Inspect variables
-(gdb) x/16x 0xC00000      # Examine GVRAM
-```
+1. `test_gui_automated.sh` backs up `AUTOEXEC.BAT` and installs a test version
+   that auto-runs `PROGRAM.X` on boot
+2. MAME's imperfect-emulation warning is pre-acknowledged in `~/.mame/cfg/x68000.cfg`
+   by setting the `warned` timestamp to a far-future value
+3. MAME launches with `-nomouse` (prevents host mouse from reaching the X68000
+   mouse port) and `-script mame/test_hello.lua`
+4. Two synthetic mouse moves (via `xdotool`) dismiss the warning screen reliably,
+   regardless of where the host cursor was previously positioned
+5. After 70 real seconds the Lua script checks TVRAM for text output, saves a
+   screenshot, prints `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`, and exits MAME
+6. The original `AUTOEXEC.BAT` is restored
 
 ## Example Program
 
-The included example program (`src/main.c`) demonstrates:
+`src/hello.s` is a minimal Human68k assembly program:
 
-- Entering supervisor mode for hardware access
-- Setting graphics mode (256 colors)
-- Drawing colored rectangles to GVRAM
-- Basic X68000 program structure
+```asm
+    section text
+start:
+    pea     msg(pc)
+    dc.w    $ff09       * DOS _PRINT (F-line dispatch)
+    addq.l  #4,sp
+    dc.w    $ff00       * DOS _EXIT
 
-Modify this program to start your own X68000 projects!
+    section data
+msg:
+    dc.b    'Hello from X68000!',13,10,0
+    end start
+```
 
-## Development Workflow
-
-1. **Edit code** in `src/` directory
-2. **Build** with `make all`
-3. **Test** with `make test`
-4. **Debug** with `./tools/debug.sh` if needed
-5. **Iterate** quickly with the automated workflow
+Key points:
+- Human68k DOS calls use **F-line opcodes** (`dc.w $FFxx`), not `TRAP #15` (which is IOCS/hardware BIOS)
+- `$FF09` = `_PRINT` — prints a null-terminated string whose address is on the stack
+- `$FF00` = `_EXIT` — terminates the process and returns to `COMMAND.X`
 
 ## Technical Details
 
 ### Toolchain
 
-- **Compiler:** gcc-m68k-linux-gnu (GCC 11.4.0)
-- **Target:** Motorola 68000 CPU
+- **Assembler:** vasmm68k_mot (VASM M68k Motorola syntax)
+- **Output format:** `-Fxfile` — native Human68k `.X` executable
+- **Target CPU:** Motorola 68000
 - **Emulator:** MAME 0.242
 - **OS:** Human68k (X68000 operating system)
 
 ### Build Process
 
-1. **Compile** C source to object files (`.o`)
-2. **Assemble** assembly source to object files
-3. **Link** with custom linker script for Human68k format
-4. **Convert** ELF to raw binary (`.X` executable)
-5. **Install** to boot disk image using mtools
+1. **Assemble** `src/hello.s` with VASM (`-Fxfile -nosym`)
+2. **Output** `build/bin/program.x` — a ready-to-run Human68k executable
+3. **Install** to `MasterDisk_V3.xdf` with `mcopy` (mtools)
 
 ### Memory Layout
 
 - **Program load address:** 0x6800 (Human68k standard)
-- **Graphics VRAM:** 0xC00000
-- **Text VRAM:** 0xE00000
-- **I/O registers:** 0xE80000 - 0xEB0000
+- **Text VRAM (TVRAM):** 0xE00000
+- **Graphics VRAM (GVRAM):** 0xC00000
+- **I/O registers:** 0xE80000 – 0xEB0000
+
+### MAME Warning Dismissal
+
+MAME shows an "imperfect emulation" warning before booting the X68000. Two
+mechanisms work in tandem to dismiss it:
+
+1. **Config pre-acknowledgement** — sets `warned="9999999999"` in
+   `~/.mame/cfg/x68000.cfg` so MAME believes it has already been shown
+2. **Dual mouse move fallback** — `xdotool mousemove` sends two synthetic
+   `MotionNotify` events to different window coordinates, guaranteeing a motion
+   delta even if the host cursor is already at one of the target positions
+
+`-nomouse` is passed to MAME so the host mouse coordinates injected by
+`xdotool` do not reach the X68000 analog mouse hardware (which would otherwise
+appear as continuous input in Human68k after the program exits).
 
 ## Resources
 
@@ -231,7 +222,6 @@ Modify this program to start your own X68000 projects!
 - [Testing Guide](docs/TESTING.md) - MAME testing
 - [Debugging Guide](docs/DEBUGGING.md) - GDB debugging
 - [X68000 Programming Guide](docs/X68000_GUIDE.md) - Learn X68000 programming
-- [Graphics API Reference](docs/GRAPHICS_API.md) - Graphics programming
 
 ### External Resources
 
@@ -240,59 +230,17 @@ Modify this program to start your own X68000 projects!
 - [Motorola 68000 Programmer's Reference](https://www.nxp.com/docs/en/reference-manual/M68000PRM.pdf)
 - X68000 development communities (forums, Discord)
 
-## Contributing
-
-Contributions welcome! Areas for improvement:
-
-- Enhanced MAME Lua automation
-- More example programs
-- Additional documentation
-- Bug fixes and optimizations
-
 ## License
 
 This development environment is provided as-is for educational purposes.
 
-**Note:** X68000 BIOS ROM files are required but not included. You must obtain these legally (dump from your own hardware or through legal channels). BIOS ROMs are copyrighted by Sharp Corporation.
+**Note:** X68000 BIOS ROM files are required but not included. You must obtain
+these legally (dump from your own hardware or through legal channels). BIOS ROMs
+are copyrighted by Sharp Corporation.
 
 ## Credits
 
-- Sharp Corporation - X68000 hardware and software
-- MAME Development Team - Emulator
-- GNU Project - Cross-compilation toolchain
-- X68000 community - Documentation and support
-
-## Support
-
-If you encounter issues:
-
-1. Check the [Setup Guide](docs/SETUP.md) troubleshooting section
-2. Verify your BIOS ROMs: `mame -verifyroms x68000`
-3. Review documentation in `docs/`
-4. Check MAME and toolchain versions
-
-## Why Linux?
-
-This Linux-based approach offers significant advantages over Windows:
-
-- **Superior automation** - No GUI manipulation fragility
-- **Professional debugging** - GDB integration with MAME
-- **Simpler architecture** - Standard Unix tools
-- **CI/CD ready** - Can run in GitHub Actions
-- **Open source** - All tools are free
-- **Command-line control** - Perfect for Claude automation
-
-## Getting Started
-
-New to X68000 development? Start here:
-
-1. Read [docs/SETUP.md](docs/SETUP.md) to set up your environment
-2. Read [docs/X68000_GUIDE.md](docs/X68000_GUIDE.md) to learn X68000 basics
-3. Study the example program in `src/main.c`
-4. Modify the example and rebuild with `make all`
-5. Read [docs/GRAPHICS_API.md](docs/GRAPHICS_API.md) for graphics programming
-6. Start building your own X68000 programs!
-
----
-
-**Happy X68000 development! 🎮**
+- Sharp Corporation — X68000 hardware and software
+- MAME Development Team — Emulator
+- VASM Development Team — Assembler
+- X68000 community — Documentation and support

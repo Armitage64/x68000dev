@@ -28,8 +28,8 @@ local function check_memory_region(base, size, name)
 end
 
 local function test_main()
-    print("[LUA] Waiting 40 seconds for system boot and execution...")
-    emu.wait(40.0)
+    print("[LUA] Waiting 65 seconds for system boot and execution...")
+    emu.wait(65.0)
 
     print("[LUA] " .. string.rep("=", 60))
     print("[LUA] Beginning System Analysis...")
@@ -84,19 +84,22 @@ local function test_main()
             if graphics_found or gvram_hits > 0 then
                 print("[LUA] ✓ TEST PASSED")
                 print("[LUA] Graphics output detected - program executed successfully")
+            elseif tvram_hits > 0 then
+                print("[LUA] ✓ TEST PASSED")
+                print("[LUA] Text output detected in TVRAM - program executed successfully")
             else
                 print("[LUA] ✗ TEST FAILED  ")
-                print("[LUA] No graphics detected - program may not have executed")
+                print("[LUA] No output detected - program may not have executed")
                 print("[LUA] ")
                 print("[LUA] Possible causes:")
                 print("[LUA]   - AUTOEXEC.BAT not running the program")
                 print("[LUA]   - Program format incompatible with Human68k")
-                print("[LUA]   - Program crashing before drawing")
-                print("[LUA]   - Graphics mode not set correctly")
+                print("[LUA]   - Program crashing before output")
+                print("[LUA]   - Not enough time for boot and execution")
             end
             print("[LUA] " .. string.rep("=", 60))
 
-            return graphics_found or gvram_hits > 0
+            return graphics_found or gvram_hits > 0 or tvram_hits > 0
         end
     end
 

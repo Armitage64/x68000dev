@@ -19,7 +19,8 @@ echo ""
 mame x68000 \
     -flop1 "$BOOT_DISK" \
     -window \
-    -skip_gameinfo &
+    -skip_gameinfo \
+    -nomouse &
 MAME_PID=$!
 
 # Wait for MAME window to appear, then move the mouse into it.
@@ -30,6 +31,8 @@ for i in $(seq 1 30); do
     if [ -n "$WID" ]; then
         echo "Found MAME window, dismissing warning..."
         sleep 0.5
+        xdotool mousemove --window "$WID" 200 200
+        sleep 0.1
         xdotool mousemove --window "$WID" 100 100
         break
     fi

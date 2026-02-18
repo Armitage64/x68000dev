@@ -1,5 +1,6 @@
 # Build artifacts
 build/
+a.out
 *.o
 *.elf
 *.bin
@@ -19,6 +20,7 @@ build/
 *.cfg
 *.sta
 screenshots/
+*.png
 
 # Editor files
 *.swp
