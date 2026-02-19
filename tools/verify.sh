@@ -74,18 +74,18 @@ echo ""
 
 # Check build
 echo "Checking build..."
-if [ -f "build/bin/program.x" ]; then
-    SIZE=$(ls -lh build/bin/program.x | awk '{print $5}')
-    echo "✓ Built program: build/bin/program.x ($SIZE)"
+if [ -f "build/bin/helloa.x" ]; then
+    SIZE=$(ls -lh build/bin/helloa.x | awk '{print $5}')
+    echo "✓ Built program: build/bin/helloa.x ($SIZE)"
 else
     echo "ℹ Program not built yet"
     echo "  Run: make all"
 fi
 
-if [ -f "build/bin/program.x.elf" ]; then
-    echo "✓ Debug symbols: build/bin/program.x.elf"
+if [ -f "build/bin/helloa.x.elf" ]; then
+    echo "✓ Debug symbols: build/bin/helloa.x.elf"
 else
-    if [ -f "build/bin/program.x" ]; then
+    if [ -f "build/bin/helloa.x" ]; then
         echo "✗ Debug symbols: NOT FOUND"
     fi
 fi
@@ -95,9 +95,9 @@ echo ""
 # Check boot disk contents
 echo "Checking program installation..."
 if mdir -i MasterDisk_V3.xdf :: 2>/dev/null | grep -q -i "PROGRAM"; then
-    echo "✓ PROGRAM.X installed on boot disk"
+    echo "✓ HELLOA.X installed on boot disk"
 else
-    echo "ℹ PROGRAM.X not on boot disk yet"
+    echo "ℹ HELLOA.X not on boot disk yet"
     echo "  Run: make install"
 fi
 

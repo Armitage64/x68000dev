@@ -8,7 +8,7 @@ target remote localhost:1234
 set architecture m68k
 
 # Load symbols from ELF file (before objcopy)
-file build/bin/program.x.elf
+file build/bin/helloa.x.elf
 
 # Common breakpoints for X68000
 # Break at program start

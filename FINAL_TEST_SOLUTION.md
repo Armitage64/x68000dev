@@ -45,7 +45,7 @@ xvfb-run -a ./tools/test_gui_automated.sh
 ```bash
 # For manual verification
 make test
-# Then type: A:PROGRAM.X at the prompt
+# Then type: A:HELLOA.X at the prompt
 ```
 
 ## CI/CD Integration
@@ -156,7 +156,7 @@ This suggests our .X file format needs work. Next steps:
 Created test programs:
 - `human68k_start.s` - 38 bytes with BRA header
 - `minimal.s` - 30 bytes position-independent
-- `program.x` - 68 bytes with startup code
+- `helloa.x` - 68 bytes with startup code
 
 All are valid 68000 code but may need proper Human68k headers.
 
@@ -184,7 +184,7 @@ git commit -am "Feature works"
 
 # Or manual test
 make test
-# Type: A:PROGRAM.X
+# Type: A:HELLOA.X
 ```
 
 ## Summary

@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 BOOT_DISK="MasterDisk_V3.xdf"
-PROGRAM="build/bin/program.x"
+PROGRAM="build/bin/helloa.x"
 TEST_AUTOEXEC="tests/autoexec_test.bat"
 BACKUP_AUTOEXEC="autoexec_backup.bat"
 TEST_RESULT="test_result.txt"
@@ -40,7 +40,7 @@ echo "Step 2: Installing test AUTOEXEC.BAT (auto-runs program)..."
 mcopy -i "$BOOT_DISK" -o "$TEST_AUTOEXEC" ::AUTOEXEC.BAT
 
 echo "Step 3: Ensuring program is installed on boot disk..."
-mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::HELLOA.X
 
 echo "Step 4: Running MAME in headless mode with validation..."
 echo ""

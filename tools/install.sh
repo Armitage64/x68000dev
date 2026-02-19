@@ -6,7 +6,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-PROGRAM="${1:-build/bin/program.x}"
+PROGRAM="${1:-build/bin/helloa.x}"
 BOOT_DISK="MasterDisk_V3.xdf"
 
 if [ ! -f "$PROGRAM" ]; then
@@ -23,7 +23,8 @@ fi
 echo "Installing $PROGRAM to $BOOT_DISK..."
 
 # Copy program to boot disk (overwrite if exists)
-mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::HELLOC.X
+mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::HELLOA.X
 
 echo "Installation complete!"
 echo "Contents of boot disk:"

@@ -40,12 +40,12 @@ for the C hello world.
 
 ---
 
-### Assembly path: `src/hello.s` → `build/bin/program.x`
+### Assembly path: `src/hello.s` → `build/bin/helloa.x`
 
 VASM assembles directly to a native Human68k `.X` executable in one step:
 
 ```bash
-./tools/vasmm68k_mot -Fxfile -nosym -o build/bin/program.x src/hello.s
+./tools/vasmm68k_mot -Fxfile -nosym -o build/bin/helloa.x src/hello.s
 ```
 
 **Flags:**
@@ -141,26 +141,26 @@ regardless of that address.
 #### 6. Install both programs
 
 ```bash
-mcopy -i MasterDisk_V3.xdf -o build/bin/program.x ::PROGRAM.X
+mcopy -i MasterDisk_V3.xdf -o build/bin/helloa.x ::HELLOA.X
 mcopy -i MasterDisk_V3.xdf -o build/bin/hello_c.x ::HELLO_C.X
 ```
 
 ## Makefile Targets
 
 ### `make all`
-Builds both `build/bin/program.x` (assembly) and `build/bin/hello_c.x` (C).
+Builds both `build/bin/helloa.x` (assembly) and `build/bin/hello_c.x` (C).
 
 ### `make clean`
 Removes all build artifacts (`build/` directory).
 
 ### `make install`
 Copies both binaries to the boot disk:
-- `build/bin/program.x` → `::PROGRAM.X`
+- `build/bin/helloa.x` → `::HELLOA.X`
 - `build/bin/hello_c.x` → `::HELLO_C.X`
 
 ### `make test`
 Installs both programs and opens an interactive MAME session. At the `A>` prompt
-you can run either program manually: `A:PROGRAM.X` or `A:HELLO_C.X`.
+you can run either program manually: `A:HELLOA.X` or `A:HELLO_C.X`.
 
 ### `make test-auto`
 Runs a fully automated MAME test: installs both programs, boots, runs the test

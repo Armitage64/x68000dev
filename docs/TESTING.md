@@ -35,7 +35,7 @@ suppressed automatically — no manual dismissal is needed.
 
 When you see the Human68k prompt (`A>`):
 
-1. Type: `A:PROGRAM.X`
+1. Type: `A:HELLOA.X`
 2. Press Enter
 
 Your program will execute.
@@ -168,13 +168,13 @@ This lists all files in the root directory.
 Copy a file from the disk:
 
 ```bash
-mcopy -i MasterDisk_V3.xdf ::PROGRAM.X ./program.x
+mcopy -i MasterDisk_V3.xdf ::HELLOA.X ./helloa.x
 ```
 
 Delete a file from the disk:
 
 ```bash
-mdel -i MasterDisk_V3.xdf ::PROGRAM.X
+mdel -i MasterDisk_V3.xdf ::HELLOA.X
 ```
 
 ## Testing Best Practices
@@ -227,7 +227,7 @@ MAME is very accurate but not perfect. If you have access to real X68000 hardwar
 ### Program Doesn't Start
 
 - Verify it's installed: `mdir -i MasterDisk_V3.xdf ::`
-- Check file size is non-zero: `ls -lh build/bin/program.x`
+- Check file size is non-zero: `ls -lh build/bin/helloa.x`
 - Try rebuilding: `make clean && make all`
 
 ### Graphics Don't Appear

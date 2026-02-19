@@ -189,7 +189,7 @@ FLOPPYDIR = build/floppy
 TESTDIR = tests
 
 # Target
-TARGET = $(BINDIR)/program.x
+TARGET = $(BINDIR)/helloa.x
 BOOT_DISK = MasterDisk_V3.xdf
 
 # Sources
@@ -218,7 +218,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.s
 
 install: $(TARGET)
 	@echo "Installing program to boot disk..."
-	mcopy -i $(BOOT_DISK) -o $(TARGET) ::PROGRAM.X
+	mcopy -i $(BOOT_DISK) -o $(TARGET) ::HELLOA.X
 	@echo "Program installed to $(BOOT_DISK)"
 
 clean:
@@ -313,8 +313,8 @@ fi
 
 # Verify program is on the disk
 echo "Checking boot disk contents..."
-mdir -i "$BOOT_DISK" :: | grep -i PROGRAM.X || {
-    echo "Error: PROGRAM.X not found on boot disk"
+mdir -i "$BOOT_DISK" :: | grep -i HELLOA.X || {
+    echo "Error: HELLOA.X not found on boot disk"
     echo "Run 'make install' first"
     exit 1
 }
@@ -342,7 +342,7 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-PROGRAM="${1:-build/bin/program.x}"
+PROGRAM="${1:-build/bin/helloa.x}"
 BOOT_DISK="MasterDisk_V3.xdf"
 
 if [ ! -f "$PROGRAM" ]; then
@@ -359,7 +359,7 @@ fi
 echo "Installing $PROGRAM to $BOOT_DISK..."
 
 # Copy program to boot disk (overwrite if exists)
-mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::HELLOA.X
 
 echo "Installation complete!"
 echo "Contents of boot disk:"
@@ -389,14 +389,14 @@ local function main()
     emu.wait(8.0)
 
     -- Type command to execute program
-    -- Simulates keyboard input: "A:PROGRAM.X" + Enter
+    -- Simulates keyboard input: "A:HELLOA.X" + Enter
     manager.machine.input:seq_poll_start("keycode")
 
     -- Execute program from floppy
     local kbd = manager.machine.ioport
 
-    -- Type: A:PROGRAM.X
-    typeKeys("A:PROGRAM.X")
+    -- Type: A:HELLOA.X
+    typeKeys("A:HELLOA.X")
     emu.wait(0.5)
 
     -- Press Enter
@@ -525,7 +525,7 @@ target remote localhost:1234
 set architecture m68k
 
 # Load symbols from ELF file (before objcopy)
-file build/bin/program.x.elf
+file build/bin/helloa.x.elf
 
 # Common breakpoints for X68000
 # Break at program start
@@ -933,7 +933,7 @@ chmod +x tools/*.sh
    cd /home/armitage/git/x68000dev
    make all
    ```
-   - Verify output: `build/bin/program.x` exists
+   - Verify output: `build/bin/helloa.x` exists
    - Check for compilation errors
    - Program should be automatically installed to MasterDisk_V3.xdf
 
@@ -941,7 +941,7 @@ chmod +x tools/*.sh
    ```bash
    mdir -i MasterDisk_V3.xdf ::
    ```
-   - Should show `PROGRAM.X` file
+   - Should show `HELLOA.X` file
 
 ### Phase 3: MAME Automation Verification
 
@@ -951,7 +951,7 @@ chmod +x tools/*.sh
    mame x68000 -flop1 MasterDisk_V3.xdf -window
    ```
    - Wait for Human68k boot (A> prompt)
-   - Manually type: `PROGRAM.X`
+   - Manually type: `HELLOA.X`
    - Press Enter
    - Verify colored rectangles appear
 

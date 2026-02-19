@@ -4,7 +4,7 @@
 
 - ✅ Build system working
 - ✅ Program built (68 bytes)
-- ✅ Installed to boot disk as PROGRAM.X
+- ✅ Installed to boot disk as HELLOA.X
 - ✅ Test script updated with validation
 - ⚠️ Xvfb doesn't provide proper environment for X68000 boot
 - 🎯 Need manual test with real display
@@ -20,7 +20,7 @@ make test
 **What will happen:**
 1. MAME window opens
 2. X68000 boots to Human68k prompt (wait ~30 seconds)
-3. **Manually type: `A:PROGRAM.X` and press Enter**
+3. **Manually type: `A:HELLOA.X` and press Enter**
 4. Wait 10 seconds
 5. Lua script checks VRAM and prints results in terminal
 6. MAME auto-closes after 50 seconds
@@ -51,7 +51,7 @@ mcopy -i MasterDisk_V3.xdf -o tests/autoexec_test.bat ::AUTOEXEC.BAT
 # Run test
 make test
 
-# System should auto-run PROGRAM.X after boot
+# System should auto-run HELLOA.X after boot
 # Lua script validates after 40 seconds
 ```
 
@@ -91,8 +91,8 @@ mdir -i MasterDisk_V3.xdf ::
 
 ### Examine our program:
 ```bash
-hexdump -C build/bin/program.x | head -10
-ls -lh build/bin/program.x
+hexdump -C build/bin/helloa.x | head -10
+ls -lh build/bin/helloa.x
 ```
 
 ### Check Text VRAM contains boot messages (if MAME is running):
@@ -104,7 +104,7 @@ The Lua script will report this automatically after 40 seconds.
 Please run `make test` and report back:
 
 1. **Does Human68k boot to the prompt?** (Should take ~30 seconds)
-2. **Can you type `A:PROGRAM.X` and press Enter?**
+2. **Can you type `A:HELLOA.X` and press Enter?**
 3. **What happens?**
    - "can not run the file" error?
    - Program runs but nothing visible?
@@ -121,7 +121,7 @@ Based on your results, I can then:
 
 ## Current Program
 
-Our current `program.x` (68 bytes):
+Our current `helloa.x` (68 bytes):
 - Simple startup code with BRA header
 - Fills GVRAM with pattern (no supervisor mode or graphics setup)
 - Very minimal to test if basic execution works

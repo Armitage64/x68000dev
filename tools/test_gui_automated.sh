@@ -13,7 +13,7 @@ if [ -z "$DISPLAY" ]; then
 fi
 
 BOOT_DISK="$SCRIPT_DIR/../MasterDisk_V3.xdf"
-PROGRAM="build/bin/program.x"
+HELLOA="build/bin/helloa.x"
 HELLOC="build/bin/helloc.x"
 TEST_AUTOEXEC="tests/autoexec_test.bat"
 BACKUP_AUTOEXEC="autoexec_backup.bat"
@@ -29,7 +29,7 @@ if [ ! -f "$BOOT_DISK" ]; then
     exit 1
 fi
 
-if [ ! -f "$PROGRAM" ]; then
+if [ ! -f "$HELLOA" ]; then
     echo "ERROR: Program not built. Run 'make all' first."
     exit 1
 fi
@@ -49,7 +49,7 @@ echo "Step 2: Installing test AUTOEXEC.BAT (auto-runs program)..."
 mcopy -i "$BOOT_DISK" -o "$TEST_AUTOEXEC" ::AUTOEXEC.BAT
 
 echo "Step 3: Ensuring programs are installed on boot disk..."
-mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+mcopy -i "$BOOT_DISK" -o "$HELLOA" ::HELLOA.X
 mcopy -i "$BOOT_DISK" -o "$HELLOC" ::HELLOC.X
 
 echo "Step 4: Running MAME with GUI and automated validation..."

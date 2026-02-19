@@ -7,33 +7,32 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
-BOOT_DISK="MasterDisk_V3.xdf"
-PROGRAM="build/bin/program.x"
+BOOT_DISK="$SCRIPT_DIR/../MasterDisk_V3.xdf"
+HELLOA="build/bin/helloa.x"
 HELLOC="build/bin/helloc.x"
+TEST_AUTOEXEC="tests/autoexec_test.bat"
+BACKUP_AUTOEXEC="autoexec_backup.bat"
+
 
 if [ ! -f "$BOOT_DISK" ]; then
     echo "Error: Boot disk not found: $BOOT_DISK"
     exit 1
 fi
 
-if [ ! -f "$PROGRAM" ]; then
-    echo "Warning: $PROGRAM not found — run 'make all' first"
+if [ ! -f "$HELLOA" ]; then
+    echo "Warning: $HELLOA not found — run 'make all' first"
 fi
 if [ ! -f "$HELLOC" ]; then
     echo "Warning: $HELLOC not found — run 'make all' first"
 fi
 
-# Install both programs to the boot disk so they are available at the A> prompt
-if [ -f "$PROGRAM" ]; then
-    mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
-fi
-if [ -f "$HELLOC" ]; then
-    mcopy -i "$BOOT_DISK" -o "$HELLOC" ::HELLOC.X
-fi
+mcopy -i "$BOOT_DISK" ::AUTOEXEC.BAT "$BACKUP_AUTOEXEC" 2>/dev/null || true
+mcopy -i "$BOOT_DISK" -o "$TEST_AUTOEXEC" ::AUTOEXEC.BAT
+mcopy -i "$BOOT_DISK" -o "$HELLOA" ::HELLOA.X
+mcopy -i "$BOOT_DISK" -o "$HELLOC" ::HELLOC.X
+
 
 echo "Booting X68000 with disk: $BOOT_DISK"
-echo "Programs installed: PROGRAM.X, HELLOC.X"
-echo "At the A> prompt, run: A:PROGRAM.X  or  A:HELLOC.X"
 echo ""
 
 # Pre-acknowledge the MAME warning before each launch. MAME resets 'warned' to the
@@ -86,4 +85,10 @@ done
 
 wait "$MAME_PID"
 echo ""
+
+if [ -f "$BACKUP_AUTOEXEC" ]; then
+    mcopy -i "$BOOT_DISK" -o "$BACKUP_AUTOEXEC" ::AUTOEXEC.BAT
+    rm "$BACKUP_AUTOEXEC"
+fi
+
 echo "Done."

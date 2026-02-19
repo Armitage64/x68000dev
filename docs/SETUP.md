@@ -113,7 +113,7 @@ make all
 
 This will:
 - Compile the example graphics program
-- Create `build/bin/program.x`
+- Create `build/bin/helloa.x`
 - Install it to the boot disk
 
 ## Step 8: Test the Program
@@ -129,7 +129,7 @@ Or manually:
 ```
 
 MAME will launch. When you see the `A>` prompt:
-1. Type: `A:PROGRAM.X`
+1. Type: `A:HELLOA.X`
 2. Press Enter
 3. You should see three colored squares
 

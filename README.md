@@ -80,7 +80,7 @@ result code suitable for CI pipelines.
 - **`test_hello.lua`** - waits 70 real seconds for boot + execution, then validates
   output by sampling the full 32 KB text VRAM plane (stride-4 scan handles
   hardware scroll — visible text can be anywhere in `0xE00000`–`0xE07FFF`)
-- **Both programs validated** - `AUTOEXEC.BAT` runs `PROGRAM.X` then `HELLO_C.X`
+- **Both programs validated** - `AUTOEXEC.BAT` runs `HELLOA.X` then `HELLO_C.X`
   sequentially; a single TVRAM hit from either program is sufficient to pass
 - **Pass/fail exit codes** - `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`
 - **Screenshot on every run** - saves `hello_result.png` via MAME's screen capture
@@ -99,21 +99,19 @@ result code suitable for CI pipelines.
 ```
 x68000dev/
 ├── src/                    # Source code
-│   ├── hello.s             # Assembly hello world (VASM, F-line DOS calls)
-│   ├── hello_c.c           # C hello world (GCC, inline asm F-line DOS calls)
+│   ├── helloa.s             # Assembly hello world (VASM, F-line DOS calls)
+│   ├── helloc.c           # C hello world (GCC, inline asm F-line DOS calls)
 │   └── crt0.s              # Minimal C runtime startup (GAS, calls main then _EXIT)
 ├── include/                # Header files
-├── assets/                 # Game resources
-│   └── mdx/                # Music files (MDX format)
 ├── build/                  # Build output (gitignored)
 │   ├── bin/                # Final executables
-│   │   ├── program.x       # Assembly hello world (.X executable)
-│   │   ├── hello_c.x       # C hello world (.X executable)
-│   │   ├── hello_c.elf     # Intermediate ELF (for inspection/debugging)
-│   │   └── hello_c.bin     # Intermediate raw binary (before .X header)
+│   │   ├── helloa.x       # Assembly hello world (.X executable)
+│   │   ├── helloc.x       # C hello world (.X executable)
+│   │   ├── helloc.elf     # Intermediate ELF (for inspection/debugging)
+│   │   └── helloc.bin     # Intermediate raw binary (before .X header)
 │   └── obj/                # Object files
 │       ├── crt0.o
-│       └── hello_c.o
+│       └── helloc.o
 ├── mame/                   # MAME configuration and Lua scripts
 │   ├── mame.ini            # MAME settings
 │   ├── test_hello.lua      # Automated validation script
@@ -121,7 +119,7 @@ x68000dev/
 │   └── debug_session.gdb   # GDB debugging script
 ├── tests/                  # Test support files
 │   └── autoexec_test.bat   # AUTOEXEC.BAT installed during test-auto
-│                           # runs PROGRAM.X then HELLO_C.X sequentially
+│                           # runs HELLOA.X then HELLO_C.X sequentially
 ├── tools/                  # Build and utility scripts
 │   ├── vasmm68k_mot        # VASM M68k assembler binary
 │   ├── make_xfile.py       # Wraps a raw binary in a Human68k .X header
@@ -158,8 +156,8 @@ make clean
 ### How the Automated Test Works
 
 1. `test_gui_automated.sh` backs up `AUTOEXEC.BAT` and installs a test version
-   (`tests/autoexec_test.bat`) that auto-runs `PROGRAM.X` then `HELLO_C.X` on boot
-2. Both `PROGRAM.X` and `HELLO_C.X` are copied to the boot disk via mtools
+   (`tests/autoexec_test.bat`) that auto-runs `HELLOA.X` then `HELLO_C.X` on boot
+2. Both `HELLOA.X` and `HELLO_C.X` are copied to the boot disk via mtools
 3. `~/.mame/cfg/x68000.cfg` is patched to set `warned="9999999999"` so MAME skips
    the imperfect-emulation warning on startup. MAME resets `warned` to the current
    timestamp at session exit, so this patch runs before every launch.
@@ -249,9 +247,9 @@ Key points for both programs:
 
 ### Build Process
 
-**Assembly program (`program.x`):**
+**Assembly program (`helloa.x`):**
 1. **Assemble** `src/hello.s` with VASM (`-Fxfile -nosym`)
-2. **Output** `build/bin/program.x` — a ready-to-run Human68k `.X` executable
+2. **Output** `build/bin/helloa.x` — a ready-to-run Human68k `.X` executable
 
 **C program (`hello_c.x`):**
 1. **Compile** `src/hello_c.c` with GCC (`-m68000 -nostdlib -ffreestanding -mpcrel`)

@@ -389,7 +389,7 @@ GDB can connect from another machine:
 # On development machine
 gdb-multiarch
 (gdb) target remote 192.168.1.100:1234
-(gdb) file build/bin/program.x.elf
+(gdb) file build/bin/helloa.x.elf
 ```
 
 ### Use Save States

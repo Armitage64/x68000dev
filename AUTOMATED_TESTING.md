@@ -30,7 +30,7 @@ Checks that all required tools are installed and configured:
 ### `make test`
 Manual test (requires GUI):
 - Launches MAME in windowed mode
-- You manually type `A:PROGRAM.X` at the Human68k prompt
+- You manually type `A:HELLOA.X` at the Human68k prompt
 - Visual verification of graphics output
 
 ### `make test-headless`
@@ -195,14 +195,14 @@ cat mame_output.log
 ### Test Manually First
 ```bash
 make test
-# Type A:PROGRAM.X at the prompt
+# Type A:HELLOA.X at the prompt
 # Verify program works before automating
 ```
 
 ### Check Boot Disk
 ```bash
 mdir -i MasterDisk_V3.xdf ::
-# Verify PROGRAM.X and AUTOEXEC.BAT are present
+# Verify HELLOA.X and AUTOEXEC.BAT are present
 ```
 
 ## CI/CD Integration

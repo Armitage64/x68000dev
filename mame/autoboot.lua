@@ -22,7 +22,7 @@ local function main()
     -- and varies by version. For now, manual input is required
     -- or use -autoboot_command if available in your MAME version
 
-    print("Boot complete. Please type: A:PROGRAM.X")
+    print("Boot complete. Please type: A:HELLOA.X")
     print("(Automated keyboard input requires MAME version-specific API)")
 
     -- Let program run for a while

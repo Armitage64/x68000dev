@@ -4,8 +4,8 @@
 
 set -e
 
-INPUT="${1:-build/bin/program.elf}"
-OUTPUT="${2:-build/bin/program.x}"
+INPUT="${1:-build/bin/helloc.elf}"
+OUTPUT="${2:-build/bin/helloc.x}"
 
 if [ ! -f "$INPUT" ]; then
     echo "Error: Input file not found: $INPUT"

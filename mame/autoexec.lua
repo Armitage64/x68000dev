@@ -14,8 +14,8 @@ local COMMAND_DELAY = 1.0     -- Delay between keystrokes
 local RUN_TIME = 5.0          -- Let program run for 5 seconds
 local SCREENSHOT_PATH = "test_output.png"
 
--- Command to type: "A:PROGRAM.X" + Enter
-local command_chars = "A:PROGRAM.X"
+-- Command to type: "A:HELLOA.X" + Enter
+local command_chars = "A:HELLOA.X"
 
 local function send_key(keycode, press_time)
     press_time = press_time or 0.05

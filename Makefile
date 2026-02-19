@@ -8,7 +8,7 @@ VASM      = ./tools/vasmm68k_mot
 BOOT_DISK = MasterDisk_V3.xdf
 BINDIR    = build/bin
 OBJDIR    = build/obj
-PROGRAM   = $(BINDIR)/program.x
+PROGRAM   = $(BINDIR)/helloa.x
 HELLOC    = $(BINDIR)/helloc.x
 
 CFLAGS    = -m68000 -nostdlib -ffreestanding -fno-builtin -fomit-frame-pointer -mpcrel
@@ -19,7 +19,7 @@ $(BINDIR) $(OBJDIR):
 	mkdir -p $@
 
 # --- Assembly hello world (unchanged) ---
-$(PROGRAM): src/hello.s | $(BINDIR)
+$(PROGRAM): src/helloa.s | $(BINDIR)
 	$(VASM) -Fxfile -nosym -o $@ $<
 
 # --- C hello world ---
@@ -40,7 +40,7 @@ $(HELLOC): $(BINDIR)/helloc.bin tools/make_xfile.py
 
 # --- Housekeeping ---
 install: $(PROGRAM) $(HELLOC)
-	mcopy -i $(BOOT_DISK) -o $(PROGRAM)  ::PROGRAM.X
+	mcopy -i $(BOOT_DISK) -o $(PROGRAM)  ::HELLOA.X
 	mcopy -i $(BOOT_DISK) -o $(HELLOC)   ::HELLOC.X
 
 clean:

@@ -167,7 +167,7 @@ $ make test-headless
 
 ### Test Programs (All Valid)
 - `src/minimal.s` - 30-byte minimal program
-- `build/bin/program.x` - 68-byte program
+- `build/bin/helloa.x` - 68-byte program
 - `/tmp/minimal.x` - Position-independent test
 
 All programs are correctly formatted 68000 code that would execute if the system booted.
