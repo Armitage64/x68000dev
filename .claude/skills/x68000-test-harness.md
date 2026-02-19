@@ -13,6 +13,12 @@ Use this skill when:
 - Implementing F-line exception handlers (Human68k DOS calls)
 - Working with floppy disk images and Human68k `.X` executables
 
+## Important Conventions
+
+When building software for the X68000 using this test harness, be sure:
+- Not to use the underscore character (_) in filenames used by Human68k
+- Not to contaminate the test harness repository: keep project-specific code, documentation, and other artifacts separate
+
 ## Key Architecture
 
 ### X68000 Platform
