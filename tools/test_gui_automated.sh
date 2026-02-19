@@ -14,6 +14,7 @@ fi
 
 BOOT_DISK="$SCRIPT_DIR/../MasterDisk_V3.xdf"
 PROGRAM="build/bin/program.x"
+HELLOC="build/bin/helloc.x"
 TEST_AUTOEXEC="tests/autoexec_test.bat"
 BACKUP_AUTOEXEC="autoexec_backup.bat"
 
@@ -33,7 +34,7 @@ if [ ! -f "$PROGRAM" ]; then
     exit 1
 fi
 
-if [ ! -f "build/bin/hello_c.x" ]; then
+if [ ! -f "$HELLOC" ]; then
     echo "ERROR: C program not built. Run 'make all' first."
     exit 1
 fi
@@ -49,7 +50,7 @@ mcopy -i "$BOOT_DISK" -o "$TEST_AUTOEXEC" ::AUTOEXEC.BAT
 
 echo "Step 3: Ensuring programs are installed on boot disk..."
 mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
-mcopy -i "$BOOT_DISK" -o build/bin/hello_c.x ::HELLO_C.X
+mcopy -i "$BOOT_DISK" -o "$HELLOC" ::HELLOC.X
 
 echo "Step 4: Running MAME with GUI and automated validation..."
 echo ""

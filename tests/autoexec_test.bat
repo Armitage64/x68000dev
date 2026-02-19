@@ -9,4 +9,4 @@ SET FASTIO=DONE
 :SKIP
 REM Auto-run test programs
 A:PROGRAM.X
-A:HELLO_C.X
+A:HELLOC.X

@@ -9,11 +9,11 @@ BOOT_DISK = MasterDisk_V3.xdf
 BINDIR    = build/bin
 OBJDIR    = build/obj
 PROGRAM   = $(BINDIR)/program.x
-HELLO_C   = $(BINDIR)/hello_c.x
+HELLOC    = $(BINDIR)/helloc.x
 
 CFLAGS    = -m68000 -nostdlib -ffreestanding -fno-builtin -fomit-frame-pointer -mpcrel
 
-all: $(PROGRAM) $(HELLO_C)
+all: $(PROGRAM) $(HELLOC)
 
 $(BINDIR) $(OBJDIR):
 	mkdir -p $@
@@ -26,22 +26,22 @@ $(PROGRAM): src/hello.s | $(BINDIR)
 $(OBJDIR)/crt0.o: src/crt0.s | $(OBJDIR)
 	$(AS) -m68000 $< -o $@
 
-$(OBJDIR)/hello_c.o: src/hello_c.c | $(OBJDIR)
+$(OBJDIR)/helloc.o: src/helloc.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BINDIR)/hello_c.elf: $(OBJDIR)/crt0.o $(OBJDIR)/hello_c.o x68k.ld | $(BINDIR)
-	$(LD) -T x68k.ld -o $@ $(OBJDIR)/crt0.o $(OBJDIR)/hello_c.o
+$(BINDIR)/helloc.elf: $(OBJDIR)/crt0.o $(OBJDIR)/helloc.o x68k.ld | $(BINDIR)
+	$(LD) -T x68k.ld -o $@ $(OBJDIR)/crt0.o $(OBJDIR)/helloc.o
 
-$(BINDIR)/hello_c.bin: $(BINDIR)/hello_c.elf
+$(BINDIR)/helloc.bin: $(BINDIR)/helloc.elf
 	$(OBJCOPY) -O binary $< $@
 
-$(HELLO_C): $(BINDIR)/hello_c.bin tools/make_xfile.py
+$(HELLOC): $(BINDIR)/helloc.bin tools/make_xfile.py
 	python3 tools/make_xfile.py $< $@
 
 # --- Housekeeping ---
-install: $(PROGRAM) $(HELLO_C)
+install: $(PROGRAM) $(HELLOC)
 	mcopy -i $(BOOT_DISK) -o $(PROGRAM)  ::PROGRAM.X
-	mcopy -i $(BOOT_DISK) -o $(HELLO_C)  ::HELLO_C.X
+	mcopy -i $(BOOT_DISK) -o $(HELLOC)   ::HELLOC.X
 
 clean:
 	rm -rf build
