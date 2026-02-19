@@ -218,6 +218,328 @@ the X68000 OS (the analog mouse port reads host coordinates injected by xdotool)
 so the xdotool cursor movement (used for warning dismissal) doesn't leak into the
 running OS after the program finishes.
 
+## X68000 Graphics Programming
+
+### Graphics Hardware Architecture
+
+The X68000 has multiple graphics subsystems that must be coordinated:
+
+**Memory Map:**
+- `0xC00000–0xDFFFFF`: Graphics VRAM (GVRAM) - 1024×1024×4 planes
+- `0xE82000–0xE8201F`: Sprite palette RAM (16 colors × 16 palettes × 2 bytes)
+- `0xE82500`: Graphics mode/control register
+- `0xE82600`: Video control register (layer priority, enable/disable)
+- `0xEB0000–0xEB07FF`: Sprite attribute table (128 sprites × 16 bytes)
+- `0xEB8000–0xEBFFFF`: PCG (Pattern Color Generator) sprite pattern RAM (32 KB)
+
+**Video Control Register (0xE82600):**
+```
+Bit 15-11: Reserved
+Bit 10:    AH (high-resolution mode)
+Bit  9:    YS (vertical resolution)
+Bit  8:    Exon (external sync enable)
+Bit  7:    HP (horizontal frequency)
+Bit  6:    SON (sprite on/off) - 1 = enable sprites
+Bit  5:    BP (back page select)
+Bit  4:    GS3 (graphic screen 3 on/off)
+Bit  3:    GS2 (graphic screen 2 on/off)
+Bit  2:    GS1 (graphic screen 1 on/off)
+Bit  1:    GS0 (graphic screen 0 on/off) - 1 = enable graphics plane 0
+Bit  0:    TS (text screen on/off)
+```
+
+**Graphics Modes (via IOCS _CRTMOD):**
+- Mode 4: 512×512, 16 colors (4 bitplanes)
+- Mode 6: 512×512, 256 colors (8 bitplanes)
+- Mode 8: 256×256, 65536 colors (16 bits per pixel)
+- Mode 16: 768×512, 16 colors (high resolution)
+
+### IOCS Graphics Functions
+
+Always prefer IOCS functions over direct hardware access:
+
+**Screen Mode Control:**
+- `_CRTMOD` (0x10): Set graphics mode
+  ```asm
+  move.w  #4,-(sp)        ; Mode 4 = 512×512, 16-color
+  move.w  #$10,d0         ; IOCS _CRTMOD
+  trap    #15
+  addq.l  #2,sp
+  ```
+
+- `_G_CLR_ON` (0x16): Clear graphics screen and enable graphics
+  ```asm
+  move.w  #$16,d0         ; IOCS _G_CLR_ON
+  trap    #15             ; No parameters needed
+  ```
+
+- `_VPAGE` (0x12): Select active video page
+  ```asm
+  move.w  #0,-(sp)        ; Page 0
+  move.w  #$12,d0         ; IOCS _VPAGE
+  trap    #15
+  addq.l  #2,sp
+  ```
+
+- `_B_CUROFF` (0x13): Turn off text cursor
+  ```asm
+  move.w  #$13,d0         ; IOCS _B_CUROFF
+  trap    #15
+  ```
+
+**Drawing Primitives:**
+- `_PSET` (0x80): Plot pixel - `PSET(x, y, color)`
+- `_LINE` (0x81): Draw line - `LINE(x1, y1, x2, y2, color, linestyle)`
+- `_BOX` (0x82): Draw box outline - `BOX(x1, y1, x2, y2, color, linestyle)`
+- `_FILL` (0x87): Fill box - `FILL(x1, y1, x2, y2, color)`
+- `_CIRCLE` (0x88): Draw circle - `CIRCLE(x, y, radius, color)`
+
+**IMPORTANT:** Stack parameter order is **right-to-left**. For `PSET(x, y, color)`:
+```asm
+move.w  #15,-(sp)       ; color (rightmost parameter)
+move.w  #100,-(sp)      ; y (middle parameter)
+move.w  #100,-(sp)      ; x (leftmost parameter)
+move.w  #$80,d0         ; IOCS _PSET
+trap    #15
+lea     6(sp),sp        ; Clean up 3 words = 6 bytes
+```
+
+### PCG Sprite System
+
+**Sprite Format:**
+- Each sprite pattern is 16×16 pixels
+- 4 bits per pixel (16 colors)
+- 128 bytes per pattern (16 rows × 8 bytes per row)
+- 256 patterns maximum in PCG RAM
+
+**Pixel Packing:**
+Each byte contains 2 pixels as nibbles:
+```
+Byte N: [Pixel 2N+1 (high nibble)][Pixel 2N (low nibble)]
+
+Example row (16 pixels = 8 bytes):
+Byte 0: [Pixel 1][Pixel 0]
+Byte 1: [Pixel 3][Pixel 2]
+...
+Byte 7: [Pixel 15][Pixel 14]
+```
+
+**Loading Sprite Pattern to PCG RAM:**
+```asm
+; Enter supervisor mode first
+move.l  #$10000,-(sp)
+move.w  #$30,d0         ; IOCS _B_SUPER
+trap    #15
+addq.l  #4,sp
+
+; Copy 128 bytes to PCG RAM
+lea     sprite_data,a0
+lea     $EB8000,a1      ; PCG RAM base (pattern 0)
+move.w  #127,d0         ; 128 bytes - 1
+.loop:
+    move.b  (a0)+,(a1)+
+    dbra    d0,.loop
+```
+
+**Sprite Control Structure (16 bytes per sprite at 0xEB0000):**
+```
++0: ctrl (word)     - bit 0: 1=show, 0=hide
++2: x_pos (word)    - horizontal position (0-1023)
++4: y_pos (word)    - vertical position (0-1023)
++6: pattern (word)  - pattern number (0-255)
++8: priority (word) - display priority (0-3)
++10: color (word)   - palette number (0-15)
++12-15: reserved
+```
+
+**Configuring Sprite 0:**
+```asm
+lea     $EB0000,a0      ; Sprite control base
+move.w  #1,(a0)         ; +0: Enable sprite
+move.w  #256,2(a0)      ; +2: X position = 256 (center)
+move.w  #256,4(a0)      ; +4: Y position = 256 (center)
+move.w  #0,6(a0)        ; +6: Use pattern 0
+move.w  #3,8(a0)        ; +8: Priority 3 (topmost)
+move.w  #0,10(a0)       ; +10: Use palette 0
+```
+
+**Palette Format (5-5-5 RGB):**
+Each color is a 16-bit word: `GGGGGRRRRRBBBBB` (bit 0 is typically 0)
+```asm
+; Load palette to sprite palette 0
+lea     palette_data,a0
+lea     $E82000,a1      ; Palette RAM base
+move.w  #15,d0          ; 16 colors - 1
+.loop:
+    move.w  (a0)+,(a1)+ ; Copy 16-bit color word
+    dbra    d0,.loop
+```
+
+**Enabling Sprite Layer:**
+```asm
+; Set bit 6 (SON) in video control register
+lea     $E82600,a0
+move.w  (a0),d0
+ori.w   #$0040,d0       ; Set bit 6 (SON)
+move.w  d0,(a0)
+```
+
+### Graphics Initialization Sequence
+
+**Recommended sequence (IOCS-first, then hardware):**
+
+```asm
+start:
+    ; 1. Print startup message (while still in text mode)
+    pea     start_msg(pc)
+    dc.w    $ff09           ; DOS _PRINT
+    addq.l  #4,sp
+
+    ; 2. Initialize graphics mode via IOCS (stays in user mode)
+    move.w  #4,-(sp)        ; Mode 4: 512×512, 16-color
+    move.w  #$10,d0         ; IOCS _CRTMOD
+    trap    #15
+    addq.l  #2,sp
+
+    move.w  #0,-(sp)        ; Select page 0
+    move.w  #$12,d0         ; IOCS _VPAGE
+    trap    #15
+    addq.l  #2,sp
+
+    move.w  #$16,d0         ; IOCS _G_CLR_ON
+    trap    #15             ; Clear screen and enable graphics
+
+    move.w  #$13,d0         ; IOCS _B_CUROFF
+    trap    #15             ; Turn off cursor
+
+    ; 3. Enter supervisor mode for hardware access
+    move.l  #$10000,-(sp)   ; Pass dummy stack pointer
+    move.w  #$30,d0         ; IOCS _B_SUPER
+    trap    #15
+    addq.l  #4,sp
+
+    ; 4. Load palette
+    bsr     load_palette
+
+    ; 5. Load sprite patterns
+    bsr     load_sprite_pattern
+
+    ; 6. Configure sprite
+    bsr     setup_sprite
+
+    ; 7. Enable sprite layer in VIDEO_CTRL
+    lea     $E82600,a0
+    move.w  (a0),d0
+    ori.w   #$0040,d0       ; Set bit 6 (SON)
+    move.w  d0,(a0)
+
+    ; 8. Infinite loop (wait for keypress or VSync)
+.wait:
+    bra     .wait
+```
+
+### Known Graphics Issues and Troubleshooting
+
+#### Issue 1: Graphics Layer Not Visible
+
+**Symptom:** IOCS _G_CLR_ON clears the screen to black, but graphics primitives
+(_PSET, _LINE, _BOX) produce no visible output despite executing without error.
+
+**Observed behavior:**
+- Screen successfully switches from text mode to graphics mode (black screen)
+- IOCS calls return success (no crashes or illegal instructions)
+- GVRAM contains written data (confirmed via memory diagnostics)
+- Direct GVRAM writes at 0xC00000 also produce no visible output
+- Video Control Register shows correct bits set (GS0 enabled)
+
+**Attempted fixes that did NOT work:**
+1. Setting VIDEO_CTRL bit 1 (GS0) manually - no change
+2. Direct GVRAM writes instead of IOCS - data written but not visible
+3. Different graphics modes (4, 6, 8, 16) - same result across all modes
+4. Writing solid blocks to GVRAM - no pixels appear on screen
+5. Using _FILL instead of _PSET - executes but produces no output
+
+**Current hypothesis:**
+- IOCS graphics layer priority/mixing may be misconfigured
+- Possible palette RAM not initialized for graphics planes (separate from sprite palette)
+- Graphics mode register (0xE82500) may need additional configuration beyond _CRTMOD
+- GVRAM page mapping may differ from expected in different graphics modes
+
+**Workaround:** None identified yet. Text mode output via DOS _PRINT works reliably.
+
+**Diagnostic approach:**
+```lua
+-- MAME Lua script to check graphics registers
+local mem = manager.machine.devices[":maincpu"].spaces["program"]
+local gfx_mode = mem:read_u16(0xE82500)
+local video_ctrl = mem:read_u16(0xE82600)
+print(string.format("GFX Mode: 0x%04X, Video Ctrl: 0x%04X", gfx_mode, video_ctrl))
+
+-- Sample GVRAM for written data
+local gvram_hits = 0
+for i = 0, 1023, 4 do
+    local addr = 0xC00000 + i
+    local val = mem:read_u8(addr)
+    if val ~= 0 then
+        gvram_hits = gvram_hits + 1
+    end
+end
+print(string.format("GVRAM non-zero bytes: %d", gvram_hits))
+```
+
+#### Issue 2: IOCS Drawing Functions Crash
+
+**Symptom:** `_LINE` (0x81), `_BOX` (0x82), `_CIRCLE` (0x88) cause "Illegal instruction"
+errors, while `_PSET` (0x80) and `_FILL` (0x87) execute without error.
+
+**Possible causes:**
+- Parameter format mismatch (word vs long, line style parameter issues)
+- IOCS version differences between real hardware and MAME
+- Function requires additional setup (color palette, line style table)
+
+**Workaround:** Use _PSET and _FILL only. Avoid _LINE, _BOX, _CIRCLE until parameter
+format is better understood.
+
+#### Issue 3: Graphics Mode Register Shows Unexpected Value
+
+**Symptom:** After IOCS _CRTMOD(4), reading 0xE82500 returns 0x06E4 instead of 0x0000
+or mode 4 indicator.
+
+**Analysis:** Graphics mode register format is not well documented. The value 0x06E4
+may be a composite of resolution, color depth, and other flags rather than a simple
+mode number. This does not appear to cause functional issues.
+
+### Best Practices for Graphics Programming
+
+1. **Always call IOCS graphics functions BEFORE entering supervisor mode**
+   - IOCS calls can be made from user mode
+   - Entering supervisor mode first may interfere with IOCS state
+
+2. **Use IOCS for screen mode switching, manual register writes for sprite setup**
+   - _CRTMOD, _G_CLR_ON, _VPAGE are reliable for graphics initialization
+   - Direct hardware access needed for sprite control (no IOCS sprite functions)
+
+3. **Wait for VSync before updating sprite positions or patterns**
+   - Prevents tearing and flickering
+   - Use IOCS _VSYNC (0x12) or poll bit 4 of 0xE88001
+
+4. **Keep programs running to preserve graphics output**
+   - Exiting returns to text mode and clears graphics
+   - Use infinite loop with optional keyboard check for exit
+
+5. **Test graphics initialization without supervisor mode first**
+   - Verify IOCS calls work correctly in user mode
+   - Add supervisor mode only when accessing sprite/palette hardware directly
+
+6. **Use automated screenshot testing for visual verification**
+   ```bash
+   make test-auto  # Captures screenshot to ~/.mame/snap/
+   ```
+
+7. **Diagnostic memory dumps in Lua scripts**
+   - Check VIDEO_CTRL, palette RAM, PCG RAM, sprite control
+   - Verify data is written where expected before debugging visibility
+
 ## Common Failure Modes and Diagnostics
 
 ### "Illegal instruction executed (PC=$xxxxxxxx)"
