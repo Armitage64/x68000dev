@@ -6,253 +6,213 @@ This document explains the build system for X68000 development.
 
 The build system uses:
 - **GNU Make** - Build automation
+- **vasmm68k_mot** - VASM M68k assembler (assembly programs, native `.X` output)
 - **m68k-linux-gnu-gcc** - C compiler for Motorola 68000
-- **m68k-linux-gnu-as** - Assembler
+- **m68k-linux-gnu-as** - GAS assembler (C runtime startup)
 - **m68k-linux-gnu-ld** - Linker
-- **m68k-linux-gnu-objcopy** - Binary conversion
+- **m68k-linux-gnu-objcopy** - Raw binary extraction
+- **tools/make_xfile.py** - Human68k `.X` header wrapper
 - **mtools** - Floppy disk image manipulation
 
 ## Quick Start
 
 ```bash
-# Build everything
+# Build all programs (assembly + C)
 make all
 
 # Clean build artifacts
 make clean
 
-# Build and test
+# Install both programs to boot disk
+make install
+
+# Interactive MAME session
 make test
 
-# Just install to boot disk
-make install
+# Fully automated test (CI-friendly)
+make test-auto
 ```
 
-## Build Process
+## Build Paths
 
-### 1. Compilation
+There are two separate build paths — one for the assembly hello world and one
+for the C hello world.
 
-Source files in `src/` are compiled to object files:
+---
+
+### Assembly path: `src/hello.s` → `build/bin/program.x`
+
+VASM assembles directly to a native Human68k `.X` executable in one step:
 
 ```bash
-m68k-linux-gnu-gcc -m68000 -O2 -Wall -Wextra -Iinclude \
-    -fomit-frame-pointer -nostdlib -ffreestanding \
-    -c src/main.c -o build/obj/main.o
+./tools/vasmm68k_mot -Fxfile -nosym -o build/bin/program.x src/hello.s
 ```
 
-**Flags explained:**
-- `-m68000` - Target Motorola 68000 CPU
-- `-O2` - Optimize for size and speed
-- `-Wall -Wextra` - Enable warnings
-- `-Iinclude` - Include directory for headers
-- `-fomit-frame-pointer` - Save register space
-- `-nostdlib` - Don't link standard library
-- `-ffreestanding` - Bare-metal target
+**Flags:**
+- `-Fxfile` — output in Human68k `.X` format (header + code + data)
+- `-nosym` — strip symbol table (smaller output)
 
-### 2. Assembly
+---
 
-Assembly files (`.s`) are assembled:
+### C path: `src/hello_c.c` → `build/bin/hello_c.x`
+
+GCC cannot produce Human68k `.X` files directly; it outputs Linux ELF. The
+pipeline converts ELF to `.X` in three steps after compilation:
+
+#### 1. Compile C source
 
 ```bash
-m68k-linux-gnu-as -m68000 -o build/obj/start.o src/start.s
+m68k-linux-gnu-gcc \
+    -m68000 -nostdlib -ffreestanding -fno-builtin \
+    -fomit-frame-pointer -mpcrel \
+    -c src/hello_c.c -o build/obj/hello_c.o
 ```
 
-### 3. Linking
+**Key flags:**
+- `-m68000` — target the base 68000 (no 68020+ instructions)
+- `-nostdlib -ffreestanding -fno-builtin` — bare-metal, no libc
+- `-mpcrel` — **critical**: emit PC-relative data references instead of absolute
+  addresses. Without this, GCC generates `pea $6826` (absolute); the program
+  only works if loaded at exactly the linker origin. With `-mpcrel`, GCC emits
+  `pea (offset,PC)`, which resolves correctly at whatever address Human68k
+  chooses to load the program.
 
-Object files are linked using the linker script:
+#### 2. Assemble C runtime startup
 
 ```bash
-m68k-linux-gnu-ld -T x68k.ld -nostdlib \
-    -o build/bin/program.x.elf \
-    build/obj/start.o build/obj/main.o
+m68k-linux-gnu-as -m68000 src/crt0.s -o build/obj/crt0.o
 ```
 
-The linker script (`x68k.ld`) defines:
-- Entry point: `_start`
-- Load address: `0x6800` (Human68k standard)
-- Memory layout: `.text`, `.rodata`, `.data`, `.bss`
+`src/crt0.s` provides the `_start` entry point required by the linker. It calls
+`main()` via a PC-relative `jsr main(%pc)` and then executes `_EXIT` (`dc.w
+$FF00`):
 
-### 4. Binary Conversion
+```asm
+    .global _start
+    .text
+_start:
+    jsr     main(%pc)   /* PC-relative call — position independent */
+    .word   0xFF00      /* DOS _EXIT */
+```
 
-The ELF file is converted to raw binary:
+#### 3. Link to ELF
+
+```bash
+m68k-linux-gnu-ld -T x68k.ld \
+    -o build/bin/hello_c.elf \
+    build/obj/crt0.o build/obj/hello_c.o
+```
+
+`x68k.ld` sets the linker origin to `0x6800` (Human68k's typical program load
+address). Because all code uses PC-relative addressing (`-mpcrel`), the actual
+runtime load address does not have to be `0x6800` — the linker origin is only
+used to assign symbol offsets; the resulting code is position-independent.
+
+#### 4. Extract raw binary
 
 ```bash
 m68k-linux-gnu-objcopy -O binary \
-    build/bin/program.x.elf \
-    build/bin/program.x
+    build/bin/hello_c.elf build/bin/hello_c.bin
 ```
 
-This creates a Human68k-compatible `.X` executable.
+Strips the ELF container, leaving only the raw machine code and data.
 
-### 5. Installation to Boot Disk
+#### 5. Wrap with Human68k `.X` header
 
-The program is copied to the floppy disk image:
+```bash
+python3 tools/make_xfile.py build/bin/hello_c.bin build/bin/hello_c.x
+```
+
+`make_xfile.py` prepends a 64-byte `.X` header:
+
+| Offset | Field        | Value                          |
+|--------|-------------|-------------------------------|
+| 0x00   | Magic       | `HU` (0x48, 0x55)              |
+| 0x04   | Base address | `0x00000000` (relocatable)    |
+| 0x08   | Entry offset | `0x00000000` (start of text)  |
+| 0x0C   | text_size   | size of raw binary payload     |
+| 0x10+  | data/bss/…  | `0` (all in text section)      |
+
+With `base_address = 0`, Human68k treats the program as relocatable and loads
+it at the first available address in user memory (typically `0x7000`–`0x8000`
+depending on what drivers are resident). The PC-relative code runs correctly
+regardless of that address.
+
+#### 6. Install both programs
 
 ```bash
 mcopy -i MasterDisk_V3.xdf -o build/bin/program.x ::PROGRAM.X
-```
-
-**mtools flags:**
-- `-i` - Disk image file
-- `-o` - Overwrite if exists
-- `::` - Root directory of disk
-
-## Directory Structure
-
-```
-x68000dev/
-├── src/           - Source code (.c and .s files)
-├── include/       - Header files (.h)
-├── build/         - Build output (gitignored)
-│   ├── obj/       - Object files (.o)
-│   └── bin/       - Final binaries (.x and .elf)
-├── assets/        - Game resources (graphics, music)
-├── tools/         - Build scripts
-├── Makefile       - Build rules
-└── x68k.ld        - Linker script
+mcopy -i MasterDisk_V3.xdf -o build/bin/hello_c.x ::HELLO_C.X
 ```
 
 ## Makefile Targets
 
 ### `make all`
-Compiles source code, links, converts to binary, and installs to boot disk.
+Builds both `build/bin/program.x` (assembly) and `build/bin/hello_c.x` (C).
 
 ### `make clean`
 Removes all build artifacts (`build/` directory).
 
 ### `make install`
-Copies the built program to the boot disk without rebuilding.
+Copies both binaries to the boot disk:
+- `build/bin/program.x` → `::PROGRAM.X`
+- `build/bin/hello_c.x` → `::HELLO_C.X`
 
 ### `make test`
-Builds, installs, and runs the program in MAME.
+Installs both programs and opens an interactive MAME session. At the `A>` prompt
+you can run either program manually: `A:PROGRAM.X` or `A:HELLO_C.X`.
 
-## Customization
+### `make test-auto`
+Runs a fully automated MAME test: installs both programs, boots, runs the test
+`AUTOEXEC.BAT` (which executes both sequentially), validates TVRAM output, and
+exits with a pass/fail code.
 
-### Adding Source Files
+## Linker Script
 
-Just create `.c` or `.s` files in `src/` or subdirectories. The Makefile automatically finds them using wildcards:
-
-```makefile
-C_SRCS = $(wildcard $(SRCDIR)/*.c $(SRCDIR)/*/*.c)
-ASM_SRCS = $(wildcard $(SRCDIR)/*.s $(SRCDIR)/*/*.s)
-```
-
-### Adding Header Files
-
-Place `.h` files in `include/`. They're automatically included via `-Iinclude`.
-
-### Changing Compiler Flags
-
-Edit the `CFLAGS` variable in `Makefile`:
-
-```makefile
-CFLAGS = -m68000 -O2 -Wall -Wextra -Iinclude \
-         -fomit-frame-pointer -nostdlib -ffreestanding
-```
-
-**For debugging:** Add `-g` for debug symbols, change `-O2` to `-O0`:
-
-```makefile
-CFLAGS = -m68000 -O0 -g -Wall -Wextra -Iinclude \
-         -fomit-frame-pointer -nostdlib -ffreestanding
-```
-
-### Changing the Output Name
-
-Edit the `TARGET` variable in `Makefile`:
-
-```makefile
-TARGET = $(BINDIR)/mygame.x
-```
-
-And update the install target:
-
-```makefile
-install: $(TARGET)
-	mcopy -i $(BOOT_DISK) -o $(TARGET) ::MYGAME.X
-```
-
-## Linker Script Explained
-
-The `x68k.ld` file defines the memory layout:
+`x68k.ld` sets the linker origin to `0x6800` — Human68k's typical first user
+program address. The C program uses `-mpcrel` throughout, so the origin only
+affects symbol offsets in the ELF; the resulting binary is position-independent
+and runs wherever Human68k loads it.
 
 ```ld
-MEMORY
-{
-    /* Human68k loads programs at 0x00006800 */
-    ram : ORIGIN = 0x00006800, LENGTH = 1M
+MEMORY { ram : ORIGIN = 0x00006800, LENGTH = 1M }
+
+SECTIONS {
+    .text  0x00006800 : { *(.text.startup) *(.text) *(.text.*) } > ram
+    .rodata            : { *(.rodata) *(.rodata.*) }              > ram
+    .data              : { *(.data)   *(.data.*)   }              > ram
+    .bss               : { *(.bss)    *(.bss.*)    *(COMMON) }    > ram
 }
 ```
-
-**Sections:**
-- `.text` - Code (starts at 0x6800)
-- `.rodata` - Read-only data (strings, constants)
-- `.data` - Initialized data
-- `.bss` - Uninitialized data (zero-filled)
 
 ## Debugging Build Issues
 
+### "Illegal instruction" on the X68000
+
+Almost always a position-dependency bug. If you omit `-mpcrel`, GCC emits
+absolute addresses (`pea $6826`). When Human68k loads the program at a
+different address (because `base_address = 0` in the `.X` header makes it
+relocatable), those absolute references point into random memory and execution
+goes off the rails.
+
+Check: `m68k-linux-gnu-objdump -d build/bin/hello_c.elf | grep pea`
+- Bad: `pea $6826` — absolute, will break if not loaded at exactly 0x6800
+- Good: `pea %pc@(6826)` — PC-relative, works at any load address
+
 ### "undefined reference to `_start`"
 
-Ensure `src/start.s` defines `_start`:
+The C program needs `src/crt0.s` to be compiled and linked first:
 
-```assembly
-.globl _start
-_start:
-    ...
-```
-
-### "undefined reference to `main`"
-
-Ensure `src/main.c` defines `main()`:
-
-```c
-void main() {
-    ...
-}
+```bash
+m68k-linux-gnu-as -m68000 src/crt0.s -o build/obj/crt0.o
+m68k-linux-gnu-ld -T x68k.ld -o ... build/obj/crt0.o build/obj/hello_c.o
 ```
 
 ### "relocation truncated to fit"
 
-The program is too large. Try:
-- Reduce code size
-- Enable optimizations (-O2 or -Os)
-- Remove unused code
-
-### "No such file or directory"
-
-Build directories don't exist. Run:
-
-```bash
-make clean
-make all
-```
-
-The Makefile should auto-create directories.
-
-## Advanced: Manual Build
-
-You can build manually without Make:
-
-```bash
-# Compile
-m68k-linux-gnu-gcc -m68000 -O2 -Wall -nostdlib -ffreestanding \
-    -c src/main.c -o build/obj/main.o
-
-m68k-linux-gnu-as -m68000 -o build/obj/start.o src/start.s
-
-# Link
-m68k-linux-gnu-ld -T x68k.ld -nostdlib \
-    -o build/bin/program.x.elf \
-    build/obj/start.o build/obj/main.o
-
-# Convert to binary
-m68k-linux-gnu-objcopy -O binary \
-    build/bin/program.x.elf build/bin/program.x
-
-# Install
-mcopy -i MasterDisk_V3.xdf -o build/bin/program.x ::PROGRAM.X
-```
+A PC-relative displacement overflowed 16 bits — code and data are more than
+32 KB apart. For small programs this should not happen; check that no large
+buffers or arrays are in `.bss` or `.data`.
 
 ## Next Steps
 

@@ -7,6 +7,7 @@ A Linux-based development environment for Sharp X68000 software development, fea
 This repository provides everything needed to develop software for the Sharp X68000 vintage Japanese home computer:
 
 - **VASM assembler** - vasmm68k_mot for Motorola 68000 assembly
+- **GCC C toolchain** - m68k-linux-gnu-gcc with a full GCC → ELF → raw binary → `.X` pipeline
 - **MAME emulation** - Test programs with the MAME X68000 emulator
 - **Automated build system** - Makefile-based workflow
 - **Automated testing** - Lua-based MAME validation with screenshot capture
@@ -29,12 +30,12 @@ git clone <repository-url> x68000dev
 cd x68000dev
 
 # Install dependencies
-sudo apt install -y mame mtools xdotool
+sudo apt install -y mame mtools xdotool gcc-m68k-linux-gnu binutils-m68k-linux-gnu
 
 # Verify X68000 ROMs are installed
 mame -verifyroms x68000
 
-# Build the example program
+# Build all example programs
 make all
 ```
 
@@ -58,9 +59,10 @@ result code suitable for CI pipelines.
 
 ### ✅ Assembly Build System
 
-- **One-command builds** - `make all` assembles and links to a Human68k `.X` executable
-- **VASM assembler** - vasmm68k_mot with `-Fxfile` output format
-- **Auto-install** - `make install` copies the binary to the boot disk via mtools
+- **One-command builds** - `make all` builds both example programs to Human68k `.X` executables
+- **VASM assembler** - vasmm68k_mot with `-Fxfile` output for the assembly hello world
+- **GCC C pipeline** - `src/hello_c.c` compiled via GCC → ELF → `objcopy` → `make_xfile.py` header wrap
+- **Auto-install** - `make install` copies both binaries to the boot disk via mtools
 - **Automatic dependency tracking** - rebuilds when source changes
 
 ### ✅ MAME Emulation Integration
@@ -75,8 +77,11 @@ result code suitable for CI pipelines.
 
 ### ✅ Automated Testing
 
-- **`test_hello.lua`** - waits 70 real seconds for boot + execution, then scans
-  TVRAM (0xE00000) and GVRAM (0xC00000) for output
+- **`test_hello.lua`** - waits 70 real seconds for boot + execution, then validates
+  output by sampling the full 32 KB text VRAM plane (stride-4 scan handles
+  hardware scroll — visible text can be anywhere in `0xE00000`–`0xE07FFF`)
+- **Both programs validated** - `AUTOEXEC.BAT` runs `PROGRAM.X` then `HELLO_C.X`
+  sequentially; a single TVRAM hit from either program is sufficient to pass
 - **Pass/fail exit codes** - `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`
 - **Screenshot on every run** - saves `hello_result.png` via MAME's screen capture
 - **150-second watchdog** - kills MAME if the warning screen was not dismissed
@@ -93,14 +98,22 @@ result code suitable for CI pipelines.
 
 ```
 x68000dev/
-├── src/                    # Assembly source code
-│   └── hello.s             # Hello World (Human68k DOS calls via F-line)
+├── src/                    # Source code
+│   ├── hello.s             # Assembly hello world (VASM, F-line DOS calls)
+│   ├── hello_c.c           # C hello world (GCC, inline asm F-line DOS calls)
+│   └── crt0.s              # Minimal C runtime startup (GAS, calls main then _EXIT)
 ├── include/                # Header files
 ├── assets/                 # Game resources
 │   └── mdx/                # Music files (MDX format)
 ├── build/                  # Build output (gitignored)
-│   └── bin/                # Final executables
-│       └── program.x       # Human68k .X executable
+│   ├── bin/                # Final executables
+│   │   ├── program.x       # Assembly hello world (.X executable)
+│   │   ├── hello_c.x       # C hello world (.X executable)
+│   │   ├── hello_c.elf     # Intermediate ELF (for inspection/debugging)
+│   │   └── hello_c.bin     # Intermediate raw binary (before .X header)
+│   └── obj/                # Object files
+│       ├── crt0.o
+│       └── hello_c.o
 ├── mame/                   # MAME configuration and Lua scripts
 │   ├── mame.ini            # MAME settings
 │   ├── test_hello.lua      # Automated validation script
@@ -108,12 +121,15 @@ x68000dev/
 │   └── debug_session.gdb   # GDB debugging script
 ├── tests/                  # Test support files
 │   └── autoexec_test.bat   # AUTOEXEC.BAT installed during test-auto
+│                           # runs PROGRAM.X then HELLO_C.X sequentially
 ├── tools/                  # Build and utility scripts
 │   ├── vasmm68k_mot        # VASM M68k assembler binary
+│   ├── make_xfile.py       # Wraps a raw binary in a Human68k .X header
 │   ├── test.sh             # Interactive MAME launcher
 │   └── test_gui_automated.sh  # Fully automated test runner
 ├── docs/                   # Documentation
 ├── Makefile                # Main build file
+├── x68k.ld                 # Linker script (entry _start, origin 0x6800)
 ├── MasterDisk_V3.xdf       # X68000 boot disk image
 └── README.md               # This file
 ```
@@ -142,22 +158,26 @@ make clean
 ### How the Automated Test Works
 
 1. `test_gui_automated.sh` backs up `AUTOEXEC.BAT` and installs a test version
-   that auto-runs `PROGRAM.X` on boot
-2. `~/.mame/cfg/x68000.cfg` is patched to set `warned="9999999999"` so MAME skips
+   (`tests/autoexec_test.bat`) that auto-runs `PROGRAM.X` then `HELLO_C.X` on boot
+2. Both `PROGRAM.X` and `HELLO_C.X` are copied to the boot disk via mtools
+3. `~/.mame/cfg/x68000.cfg` is patched to set `warned="9999999999"` so MAME skips
    the imperfect-emulation warning on startup. MAME resets `warned` to the current
    timestamp at session exit, so this patch runs before every launch.
-3. MAME launches with `-nomouse` (prevents host mouse from reaching the X68000
+4. MAME launches with `-nomouse` (prevents host mouse from reaching the X68000
    mouse port) and `-script mame/test_hello.lua`
-4. As a fallback, `xdotool` moves the cursor to the MAME window centre and sends
+5. As a fallback, `xdotool` moves the cursor to the MAME window centre and sends
    a XTEST mouse click (no `--window` flag, so SDL2 treats it as real hardware
    input rather than filtering it as a synthetic XSendEvent)
-5. After 70 real seconds the Lua script checks TVRAM for text output, saves a
-   screenshot, prints `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`, and exits MAME
-6. The original `AUTOEXEC.BAT` is restored
+6. After 70 real seconds the Lua script samples the full 32 KB text VRAM plane
+   (stride-4, covers any CRTC hardware-scroll offset), saves a screenshot, prints
+   `TEST PASSED` / `TEST PARTIAL` / `TEST FAILED`, and exits MAME
+7. The original `AUTOEXEC.BAT` is restored
 
-## Example Program
+## Example Programs
 
-`src/hello.s` is a minimal Human68k assembly program:
+### Assembly hello world (`src/hello.s`)
+
+Built directly with VASM to a native `.X` file:
 
 ```asm
     section text
@@ -173,8 +193,47 @@ msg:
     end start
 ```
 
-Key points:
-- Human68k DOS calls use **F-line opcodes** (`dc.w $FFxx`), not `TRAP #15` (which is IOCS/hardware BIOS)
+### C hello world (`src/hello_c.c` + `src/crt0.s`)
+
+Built through GCC → ELF → raw binary → `.X` header wrap:
+
+```c
+static void dos_print(const char *msg) {
+    __asm__ __volatile__(
+        "pea (%0)\n\t"       /* push string address */
+        ".word 0xff09\n\t"   /* DOS _PRINT */
+        "addq.l #4, %%sp"    /* pop argument */
+        : : "a" (msg) : "memory"
+    );
+}
+
+void main(void) {
+    dos_print("Hello from C on X68000!\r\n");
+}
+```
+
+**Build pipeline:**
+```
+src/hello_c.c  ──[gcc -m68000 -mpcrel]──► build/obj/hello_c.o ─┐
+src/crt0.s     ──[as  -m68000]──────────► build/obj/crt0.o     ─┤
+                                                                  └─[ld -T x68k.ld]──► hello_c.elf
+                                                                                           │
+                                                                              [objcopy -O binary]
+                                                                                           │
+                                                                              hello_c.bin
+                                                                                           │
+                                                                      [make_xfile.py (64-byte .X header)]
+                                                                                           │
+                                                                              hello_c.x
+```
+
+The `-mpcrel` flag is critical: it makes GCC emit PC-relative data references
+(`pea (offset,PC)` instead of `pea $absolute`). Without it the binary only runs
+if loaded at exactly the linker origin address; with it the binary is
+position-independent and runs wherever Human68k places it in memory.
+
+Key points for both programs:
+- Human68k DOS calls use **F-line opcodes** (`dc.w $FFxx`), not `TRAP #15` (IOCS/hardware BIOS)
 - `$FF09` = `_PRINT` — prints a null-terminated string whose address is on the stack
 - `$FF00` = `_EXIT` — terminates the process and returns to `COMMAND.X`
 
@@ -182,17 +241,24 @@ Key points:
 
 ### Toolchain
 
-- **Assembler:** vasmm68k_mot (VASM M68k Motorola syntax)
-- **Output format:** `-Fxfile` — native Human68k `.X` executable
-- **Target CPU:** Motorola 68000
-- **Emulator:** MAME 0.242
+- **Assembly path:** vasmm68k_mot (VASM, Motorola syntax) → native `.X` via `-Fxfile`
+- **C path:** m68k-linux-gnu-gcc → ELF → objcopy (raw binary) → `make_xfile.py` (`.X` header)
+- **Target CPU:** Motorola 68000 (`-m68000`)
+- **Emulator:** MAME
 - **OS:** Human68k (X68000 operating system)
 
 ### Build Process
 
+**Assembly program (`program.x`):**
 1. **Assemble** `src/hello.s` with VASM (`-Fxfile -nosym`)
-2. **Output** `build/bin/program.x` — a ready-to-run Human68k executable
-3. **Install** to `MasterDisk_V3.xdf` with `mcopy` (mtools)
+2. **Output** `build/bin/program.x` — a ready-to-run Human68k `.X` executable
+
+**C program (`hello_c.x`):**
+1. **Compile** `src/hello_c.c` with GCC (`-m68000 -nostdlib -ffreestanding -mpcrel`)
+2. **Assemble** `src/crt0.s` with GAS (`-m68000`) — provides the `_start` entry point
+3. **Link** with `m68k-linux-gnu-ld -T x68k.ld` → `build/bin/hello_c.elf`
+4. **Extract** raw binary with `objcopy -O binary` → `build/bin/hello_c.bin`
+5. **Wrap** with `tools/make_xfile.py` — prepends the 64-byte `.X` header → `build/bin/hello_c.x`
 
 ### Memory Layout
 

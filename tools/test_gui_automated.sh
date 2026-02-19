@@ -33,6 +33,11 @@ if [ ! -f "$PROGRAM" ]; then
     exit 1
 fi
 
+if [ ! -f "build/bin/hello_c.x" ]; then
+    echo "ERROR: C program not built. Run 'make all' first."
+    exit 1
+fi
+
 # Clean up previous test results
 rm -f test_result.txt test_screenshot.png mame_output.log 2>/dev/null || true
 
@@ -42,8 +47,9 @@ mcopy -i "$BOOT_DISK" ::AUTOEXEC.BAT "$BACKUP_AUTOEXEC" 2>/dev/null || true
 echo "Step 2: Installing test AUTOEXEC.BAT (auto-runs program)..."
 mcopy -i "$BOOT_DISK" -o "$TEST_AUTOEXEC" ::AUTOEXEC.BAT
 
-echo "Step 3: Ensuring program is installed on boot disk..."
+echo "Step 3: Ensuring programs are installed on boot disk..."
 mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+mcopy -i "$BOOT_DISK" -o build/bin/hello_c.x ::HELLO_C.X
 
 echo "Step 4: Running MAME with GUI and automated validation..."
 echo ""

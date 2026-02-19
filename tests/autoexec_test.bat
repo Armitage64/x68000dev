@@ -7,5 +7,6 @@ FASTSEEK 128
 FASTOPEN 100
 SET FASTIO=DONE
 :SKIP
-REM Auto-run test program
+REM Auto-run test programs
 A:PROGRAM.X
+A:HELLO_C.X

@@ -89,9 +89,12 @@ emu.register_periodic(function()
         end
     end
 
-    -- Check TVRAM - scan first 256 chars of text screen (96 cols x ~3 rows)
+    -- Check TVRAM - sample every 4th cell across the full 32KB text plane.
+    -- The X68000 uses hardware scroll (CRTC scroll register), so visible text
+    -- can be anywhere in 0xE00000-0xE07FFF after the terminal has scrolled.
+    -- Stride-4 sampling (4096 iterations) covers the full range quickly.
     local tvram_hits = 0
-    for i = 0, 255 do
+    for i = 0, 16383, 4 do
         local addr = 0xE00000 + i * 2
         local ok, val = pcall(function() return mem:read_u16(addr) end)
         if ok and val ~= 0 then

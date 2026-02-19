@@ -5,14 +5,35 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BOOT_DISK="$SCRIPT_DIR/../MasterDisk_V3.xdf"
+cd "$SCRIPT_DIR/.."
+
+BOOT_DISK="MasterDisk_V3.xdf"
+PROGRAM="build/bin/program.x"
+HELLO_C="build/bin/hello_c.x"
 
 if [ ! -f "$BOOT_DISK" ]; then
     echo "Error: Boot disk not found: $BOOT_DISK"
     exit 1
 fi
 
+if [ ! -f "$PROGRAM" ]; then
+    echo "Warning: $PROGRAM not found — run 'make all' first"
+fi
+if [ ! -f "$HELLO_C" ]; then
+    echo "Warning: $HELLO_C not found — run 'make all' first"
+fi
+
+# Install both programs to the boot disk so they are available at the A> prompt
+if [ -f "$PROGRAM" ]; then
+    mcopy -i "$BOOT_DISK" -o "$PROGRAM" ::PROGRAM.X
+fi
+if [ -f "$HELLO_C" ]; then
+    mcopy -i "$BOOT_DISK" -o "$HELLO_C" ::HELLO_C.X
+fi
+
 echo "Booting X68000 with disk: $BOOT_DISK"
+echo "Programs installed: PROGRAM.X, HELLO_C.X"
+echo "At the A> prompt, run: A:PROGRAM.X  or  A:HELLO_C.X"
 echo ""
 
 # Pre-acknowledge the MAME warning before each launch. MAME resets 'warned' to the
