@@ -312,6 +312,10 @@ lea     6(sp),sp        ; Clean up 3 words = 6 bytes
 
 ### PCG Sprite System
 
+**⚠️ CRITICAL: Use IOCS sprite functions, NOT direct hardware access!**
+
+Direct writes to sprite control registers ($EB0000) or PCG RAM ($EB8000) will NOT work properly. The X68000 sprite system requires IOCS initialization to configure internal state machines.
+
 **Sprite Format:**
 - Each sprite pattern is 16×16 pixels
 - 4 bits per pixel (16 colors)
@@ -330,7 +334,85 @@ Byte 1: [Pixel 3][Pixel 2]
 Byte 7: [Pixel 15][Pixel 14]
 ```
 
-**Loading Sprite Pattern to PCG RAM:**
+**IOCS Sprite Functions (REQUIRED!):**
+
+| Code | Function     | Purpose                              |
+|------|--------------|--------------------------------------|
+| $C0  | _SP_INIT     | Initialize sprite system             |
+| $C1  | _SP_ON       | Enable sprite display (CRITICAL!)    |
+| $C2  | _SP_OFF      | Disable sprite display               |
+| $C4  | _SP_DEFCG    | Define sprite pattern (load to PCG)  |
+| $C6  | _SP_REGST    | Set sprite position/priority/palette |
+| $C7  | _SP_REGGT    | Get sprite register settings         |
+
+**Correct Sprite Initialization Sequence:**
+
+**1. Initialize Sprite System:**
+```asm
+move.w  #$C0,d0         ; IOCS _SP_INIT
+trap    #15             ; Returns 0 on success, -1 if screen mode invalid
+```
+
+**2. Load Sprite Pattern to PCG RAM (using IOCS):**
+```asm
+; Load pattern 0
+move.w  #0,d1           ; d1 = pattern number (0-255)
+lea     sprite_data,a1  ; a1 = address of 128-byte pattern data
+move.w  #$C4,d0         ; IOCS _SP_DEFCG
+trap    #15
+
+; Load additional patterns (repeat for each)
+move.w  #1,d1           ; Pattern 1
+lea     sprite_data2,a1
+move.w  #$C4,d0
+trap    #15
+; ... etc
+```
+
+**3. Configure Sprite Position/Priority (using IOCS):**
+```asm
+; IOCS _SP_REGST parameters:
+; d1.w = sprite number (0-127)
+; d2.w = X position (0-1023)
+; d3.w = Y position (0-1023)
+; d4.w = pattern number (0-255)
+; d5.w = priority (0-3, MUST be non-zero!)
+; d6.w = palette (bits 12-15) + enable bit (bit 0)
+
+move.w  #0,d1           ; Sprite 0
+move.w  #256,d2         ; X = 256 (center)
+move.w  #256,d3         ; Y = 256 (center)
+move.w  #0,d4           ; Pattern 0
+move.w  #3,d5           ; Priority 3 (topmost) - REQUIRED NON-ZERO!
+move.w  #$0001,d6       ; Palette 0, bit 0=1 enables sprite
+move.w  #$C6,d0         ; IOCS _SP_REGST
+trap    #15
+```
+
+**Sprite Control Structure (16 bytes per sprite at 0xEB0000):**
+DO NOT write directly - use IOCS _SP_REGST instead!
+```
++0: ctrl (word)     - bit 0: 1=show, 0=hide
++2: x_pos (word)    - horizontal position (0-1023)
++4: y_pos (word)    - vertical position (0-1023)
++6: pattern (word)  - pattern number (0-255)
++8: priority (word) - display priority (0-3, MUST be non-zero!)
++10: color (word)   - palette number (0-15)
++12-15: reserved
+```
+
+**4. Enable Sprite Display (CRITICAL!):**
+```asm
+move.w  #$C1,d0         ; IOCS _SP_ON
+trap    #15             ; THIS IS THE CRITICAL CALL!
+                        ; Sprites will NOT display without this!
+```
+
+**Palette Format (5-5-5 RGB):**
+Each color is a 16-bit word: `GGGGGRRRRRBBBBB` (bit 0 is typically 0)
+
+In 16-color mode (mode 4), sprites and graphics share the same palette at 0xE82000.
+Load palette data in supervisor mode:
 ```asm
 ; Enter supervisor mode first
 move.l  #$10000,-(sp)
@@ -338,40 +420,6 @@ move.w  #$30,d0         ; IOCS _B_SUPER
 trap    #15
 addq.l  #4,sp
 
-; Copy 128 bytes to PCG RAM
-lea     sprite_data,a0
-lea     $EB8000,a1      ; PCG RAM base (pattern 0)
-move.w  #127,d0         ; 128 bytes - 1
-.loop:
-    move.b  (a0)+,(a1)+
-    dbra    d0,.loop
-```
-
-**Sprite Control Structure (16 bytes per sprite at 0xEB0000):**
-```
-+0: ctrl (word)     - bit 0: 1=show, 0=hide
-+2: x_pos (word)    - horizontal position (0-1023)
-+4: y_pos (word)    - vertical position (0-1023)
-+6: pattern (word)  - pattern number (0-255)
-+8: priority (word) - display priority (0-3)
-+10: color (word)   - palette number (0-15)
-+12-15: reserved
-```
-
-**Configuring Sprite 0:**
-```asm
-lea     $EB0000,a0      ; Sprite control base
-move.w  #1,(a0)         ; +0: Enable sprite
-move.w  #256,2(a0)      ; +2: X position = 256 (center)
-move.w  #256,4(a0)      ; +4: Y position = 256 (center)
-move.w  #0,6(a0)        ; +6: Use pattern 0
-move.w  #3,8(a0)        ; +8: Priority 3 (topmost)
-move.w  #0,10(a0)       ; +10: Use palette 0
-```
-
-**Palette Format (5-5-5 RGB):**
-Each color is a 16-bit word: `GGGGGRRRRRBBBBB` (bit 0 is typically 0)
-```asm
 ; Load palette to sprite palette 0
 lea     palette_data,a0
 lea     $E82000,a1      ; Palette RAM base
@@ -381,20 +429,106 @@ move.w  #15,d0          ; 16 colors - 1
     dbra    d0,.loop
 ```
 
-**Enabling Sprite Layer:**
+**⚠️ IMPORTANT: Do NOT manually set VIDEO_CTRL sprite bit!**
+
+Direct writes to VIDEO_CTRL (0xE82600) will conflict with IOCS functions.
+Use `_SP_ON` ($C1) to enable sprites, NOT manual register manipulation.
+
+**Complete Working Example (IOCS Sprites):**
+
 ```asm
-; Set bit 6 (SON) in video control register
-lea     $E82600,a0
-move.w  (a0),d0
-ori.w   #$0040,d0       ; Set bit 6 (SON)
-move.w  d0,(a0)
+IOCS_CRTMOD     equ     $10
+IOCS_VPAGE      equ     $12
+IOCS_G_CLR_ON   equ     $16
+IOCS_B_CUROFF   equ     $13
+IOCS_B_SUPER    equ     $30
+IOCS_SP_INIT    equ     $C0
+IOCS_SP_ON      equ     $C1
+IOCS_SP_DEFCG   equ     $C4
+IOCS_SP_REGST   equ     $C6
+
+    section text
+start:
+    ; 1. Initialize graphics mode (user mode)
+    move.w  #4,-(sp)                ; Mode 4: 512×512, 16-color
+    move.w  #IOCS_CRTMOD,d0
+    trap    #15
+    addq.l  #2,sp
+
+    move.w  #0,-(sp)                ; Select page 0
+    move.w  #IOCS_VPAGE,d0
+    trap    #15
+    addq.l  #2,sp
+
+    move.w  #IOCS_G_CLR_ON,d0       ; Clear and enable graphics
+    trap    #15
+
+    move.w  #IOCS_B_CUROFF,d0       ; Turn off cursor
+    trap    #15
+
+    ; 2. Initialize sprite system
+    move.w  #IOCS_SP_INIT,d0
+    trap    #15
+
+    ; 3. Load sprite pattern
+    move.w  #0,d1                   ; Pattern 0
+    lea     sprite_data,a1
+    move.w  #IOCS_SP_DEFCG,d0
+    trap    #15
+
+    ; 4. Configure sprite position
+    move.w  #0,d1                   ; Sprite 0
+    move.w  #256,d2                 ; X = 256
+    move.w  #256,d3                 ; Y = 256
+    move.w  #0,d4                   ; Pattern 0
+    move.w  #3,d5                   ; Priority 3
+    move.w  #$0001,d6               ; Palette 0, enabled
+    move.w  #IOCS_SP_REGST,d0
+    trap    #15
+
+    ; 5. Enable sprite display (CRITICAL!)
+    move.w  #IOCS_SP_ON,d0
+    trap    #15
+
+    ; 6. Enter supervisor mode for palette loading
+    move.l  #$10000,-(sp)
+    move.w  #IOCS_B_SUPER,d0
+    trap    #15
+    addq.l  #4,sp
+
+    ; 7. Load palette
+    lea     palette_data,a0
+    lea     $E82000,a1
+    move.w  #15,d0
+.pal_loop:
+    move.w  (a0)+,(a1)+
+    dbra    d0,.pal_loop
+
+    ; 8. Main loop
+main_loop:
+    bra     main_loop               ; Loop forever
+
+    section data
+sprite_data:
+    incbin  "sprite_pattern.bin"    ; 128 bytes
+palette_data:
+    incbin  "palette.bin"           ; 32 bytes (16 colors)
 ```
 
-### Graphics Initialization Sequence
+### Graphics Initialization Sequence (Legacy - Direct Hardware Access)
 
-**Recommended sequence (IOCS-first, then hardware):**
+**⚠️ WARNING: Direct hardware access does NOT work reliably!**
+
+The sequence below is documented for reference but should NOT be used.
+Use the IOCS-based approach shown above instead.
+
+**Why direct access fails:**
+- Sprite system requires internal state machine initialization
+- VIDEO_CTRL writes conflict with IOCS functions
+- Missing initialization steps cause black screen even when registers appear correct
 
 ```asm
+; THIS DOES NOT WORK - Use IOCS functions instead!
 start:
     ; 1. Print startup message (while still in text mode)
     pea     start_msg(pc)

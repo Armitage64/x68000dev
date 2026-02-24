@@ -35,3 +35,7 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Disk images (modified during testing)
+*.xdf
+*.hdm
